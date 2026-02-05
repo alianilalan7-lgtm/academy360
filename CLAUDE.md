@@ -36,15 +36,18 @@ src/
         achievements/       # Athlete achievements
         assignments/        # Coach: program assignments
         groups/             # Admin: group management
-        measurements/       # Coach: athlete measurements
+          [id]/             # Group detail + members
+        measurements/       # Coach: athlete measurements + history
         members/            # Admin: member management
         notifications/      # Admin: send notifications
         organizations/      # Super Admin: all orgs
         payments/           # Admin/Parent: payment tracking
         players/            # Coach: athlete list
+          [id]/             # Player detail + stats
         programs/           # Coach/Athlete: training programs
         progress/           # Athlete/Parent: progress tracking
         sessions/           # Coach/Athlete: training sessions
+          [id]/             # Session detail + attendance
         settings/           # Super Admin: platform settings
         users/              # Super Admin: all users
         page.tsx            # Main dashboard (role-conditional)
@@ -148,16 +151,16 @@ Manual/offline payment tracking only. No online payment gateway. Admins record p
 - PWA + Mobile: Complete
 - Build: 0 errors
 
-## Known Missing Features
-**Detail Pages (Priority):**
-- `/dashboard/players/[id]` - Player detail page
-- `/dashboard/sessions/[id]` - Session detail + attendance
-- `/dashboard/groups/[id]` - Group detail + members
-- `/dashboard/programs/[id]` - Program detail
+## Completed Detail Pages
+- `/dashboard/players/[id]` - Player detail (profile, stats, achievements, measurements, quick actions)
+- `/dashboard/sessions/[id]` - Session detail + bulk attendance recording (present/absent/late/excused)
+- `/dashboard/groups/[id]` - Group detail + member management (add/remove athletes)
+- `/dashboard/measurements` - Add measurement form + history tab with filters
 
-**Forms:**
+## Known Missing Features
+**Pages:**
+- `/dashboard/programs/[id]` - Program detail page
 - Program create/edit form for coaches
-- Measurements history view (form exists, history missing)
 
 **Other:**
 - Member role update (only invite/deactivate exists)
