@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(supabase init:*)",
+      "Bash(supabase orgs list:*)",
+      "Bash(supabase projects create:*)",
+      "Bash(npm run build:*)",
+      "Bash(find:*)",
+      "Bash(git init:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh auth:*)",
+      "Bash(gh repo create:*)",
+      "Bash(ls:*)",
+      "Bash(npx tsc:*)",
+      "Bash(wc:*)",
+      "Bash(git push:*)",
+      "mcp__plugin_context7_context7__query-docs",
+      "Bash(npm ls:*)",
+      "Bash(node -e:*)",
+      "Bash(git -C /Users/alianilalan/Desktop/academy360 add CLAUDE.md .claude/settings.local.json)",
+      "Bash(git -C /Users/alianilalan/Desktop/academy360 commit -m \"$\\(cat <<''EOF''\nchore: Update CLAUDE.md with current project status and PWA docs\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  }
+}
