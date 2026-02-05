@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getAuthUser } from '@/lib/auth'
-import { DashboardShell } from './dashboard-shell'
+import { createClient } from '@/lib/supabase/server'
+import { DashboardShellWrapper } from './dashboard-shell-wrapper'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getAuthUser()
@@ -13,13 +14,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/auth/select-role')
   }
 
+  // Fetch organizations for the memberships
+  const supabase = await createClient()
+  const orgIds = user.memberships.map(m => m.organization_id)
+
+  const { data: organizations } = await supabase
+    .from('organizations')
+    .select('id, name')
+    .in('id', orgIds)
+
   return (
-    <DashboardShell
-      role={user.currentRole || 'athlete'}
+    <DashboardShellWrapper
       userName={user.profile?.full_name || user.email}
-      orgName={undefined}
+      memberships={user.memberships}
+      organizations={organizations || []}
+      defaultRole={user.currentRole || 'athlete'}
     >
       {children}
-    </DashboardShell>
+    </DashboardShellWrapper>
   )
 }

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { UserRole } from '@/lib/types'
 import { useSidebar } from './sidebar-context'
+import { useRole, ROLE_LABELS } from '@/contexts/role-context'
 
 interface NavItem {
   label: string
@@ -11,37 +12,38 @@ interface NavItem {
   icon: string
 }
 
+// Unified navigation items - all routes start with /dashboard
 const navItems: Record<string, NavItem[]> = {
   athlete: [
-    { label: 'Dashboard', href: '/athlete', icon: '🏠' },
-    { label: 'Programlarim', href: '/athlete/programs', icon: '📋' },
-    { label: 'Gelisimim', href: '/athlete/progress', icon: '📈' },
-    { label: 'Basarimlar', href: '/athlete/achievements', icon: '🏆' },
+    { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
+    { label: 'Programlarim', href: '/dashboard/programs', icon: '📋' },
+    { label: 'Gelisimim', href: '/dashboard/progress', icon: '📈' },
+    { label: 'Basarimlar', href: '/dashboard/achievements', icon: '🏆' },
   ],
   coach: [
-    { label: 'Dashboard', href: '/coach', icon: '🏠' },
-    { label: 'Oyuncular', href: '/coach/players', icon: '👥' },
-    { label: 'Olcumler', href: '/coach/measurements', icon: '📏' },
-    { label: 'Seanslar', href: '/coach/sessions', icon: '📅' },
-    { label: 'Program Ata', href: '/coach/assignments', icon: '📋' },
+    { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
+    { label: 'Oyuncular', href: '/dashboard/players', icon: '👥' },
+    { label: 'Olcumler', href: '/dashboard/measurements', icon: '📏' },
+    { label: 'Seanslar', href: '/dashboard/sessions', icon: '📅' },
+    { label: 'Program Ata', href: '/dashboard/assignments', icon: '📋' },
   ],
   club_admin: [
-    { label: 'Dashboard', href: '/admin', icon: '🏠' },
-    { label: 'Uyeler', href: '/admin/members', icon: '👥' },
-    { label: 'Gruplar', href: '/admin/groups', icon: '🏷️' },
-    { label: 'Odemeler', href: '/admin/payments', icon: '💰' },
-    { label: 'Bildirimler', href: '/admin/notifications', icon: '🔔' },
+    { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
+    { label: 'Uyeler', href: '/dashboard/members', icon: '👥' },
+    { label: 'Gruplar', href: '/dashboard/groups', icon: '🏷️' },
+    { label: 'Odemeler', href: '/dashboard/payments', icon: '💰' },
+    { label: 'Bildirimler', href: '/dashboard/notifications', icon: '🔔' },
   ],
   parent: [
-    { label: 'Dashboard', href: '/parent', icon: '🏠' },
-    { label: 'Gelisim', href: '/parent/progress', icon: '📈' },
-    { label: 'Odemeler', href: '/parent/payments', icon: '💰' },
+    { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
+    { label: 'Gelisim', href: '/dashboard/progress', icon: '📈' },
+    { label: 'Odemeler', href: '/dashboard/payments', icon: '💰' },
   ],
   super_admin: [
-    { label: 'Dashboard', href: '/super-admin', icon: '🏠' },
-    { label: 'Organizasyonlar', href: '/super-admin/organizations', icon: '🏢' },
-    { label: 'Tum Uyeler', href: '/super-admin/users', icon: '👥' },
-    { label: 'Sistem Ayarlari', href: '/super-admin/settings', icon: '⚙️' },
+    { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
+    { label: 'Organizasyonlar', href: '/dashboard/organizations', icon: '🏢' },
+    { label: 'Tum Uyeler', href: '/dashboard/users', icon: '👥' },
+    { label: 'Sistem Ayarlari', href: '/dashboard/settings', icon: '⚙️' },
   ],
 }
 
@@ -51,10 +53,17 @@ interface SidebarProps {
   orgName?: string
 }
 
-export function Sidebar({ role, userName, orgName }: SidebarProps) {
+export function Sidebar({ userName, orgName }: SidebarProps) {
   const pathname = usePathname()
   const { isOpen, close } = useSidebar()
-  const items = navItems[role] || navItems.athlete
+  const { activeRole, availableRoles } = useRole()
+
+  // Use activeRole from context, fallback to prop
+  const currentRole = activeRole || 'athlete'
+  const items = navItems[currentRole] || navItems.athlete
+
+  // Get current org name from available roles
+  const currentOrgName = orgName || availableRoles.find(r => r.role === currentRole)?.orgName
 
   return (
     <>
@@ -80,7 +89,7 @@ export function Sidebar({ role, userName, orgName }: SidebarProps) {
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-emerald-600">Academy360</h1>
-            {orgName && <p className="text-sm text-gray-500 mt-1">{orgName}</p>}
+            {currentOrgName && <p className="text-sm text-gray-500 mt-1">{currentOrgName}</p>}
           </div>
           <button
             onClick={close}
@@ -96,7 +105,10 @@ export function Sidebar({ role, userName, orgName }: SidebarProps) {
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {items.map(item => {
-            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href + '/'))
+            // For dashboard home, only match exact path
+            const isActive = item.href === '/dashboard'
+              ? pathname === '/dashboard'
+              : pathname === item.href || pathname.startsWith(item.href + '/')
             return (
               <Link
                 key={item.href}
@@ -123,7 +135,7 @@ export function Sidebar({ role, userName, orgName }: SidebarProps) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">{userName || 'Kullanici'}</p>
-              <p className="text-xs text-gray-500 capitalize">{role.replace('_', ' ')}</p>
+              <p className="text-xs text-gray-500">{ROLE_LABELS[currentRole]}</p>
             </div>
           </div>
           <Link

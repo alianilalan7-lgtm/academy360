@@ -20,7 +20,14 @@
       "Bash(npm ls:*)",
       "Bash(node -e:*)",
       "Bash(git -C /Users/alianilalan/Desktop/academy360 add CLAUDE.md .claude/settings.local.json)",
-      "Bash(git -C /Users/alianilalan/Desktop/academy360 commit -m \"$\\(cat <<''EOF''\nchore: Update CLAUDE.md with current project status and PWA docs\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git -C /Users/alianilalan/Desktop/academy360 commit -m \"$\\(cat <<''EOF''\nchore: Update CLAUDE.md with current project status and PWA docs\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /Users/alianilalan/Desktop/academy360 push origin main)",
+      "Bash(npx supabase:*)",
+      "Bash(source:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run seed:data:*)"
     ]
   }
 }

@@ -228,7 +228,7 @@ function generateWeeklyProgress(
     const date = new Date(today)
     date.setDate(date.getDate() - i)
     const dateKey = date.toISOString().split('T')[0]
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const dayNames = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
 
     result.push({
       day: dayNames[date.getDay()],

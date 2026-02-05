@@ -74,31 +74,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch user profile with memberships
+    // Fetch user profile
     const { data: userProfile, error: profileError } = await supabase
       .from('user_profiles')
-      .select(`
-        *,
-        memberships (
-          id,
-          role,
-          status,
-          organization_id,
-          organizations (
-            id,
-            name,
-            slug,
-            logo_url
-          )
-        )
-      `)
+      .select('*')
       .eq('id', data.user.id)
       .single()
 
     if (profileError) {
       console.error('Error fetching user profile:', profileError)
-      // Still return success since auth worked, just without profile
     }
+
+    // Fetch memberships separately to avoid FK ambiguity
+    const { data: memberships } = await supabase
+      .from('memberships')
+      .select(`
+        id,
+        role,
+        status,
+        organization_id,
+        organizations (
+          id,
+          name,
+          slug,
+          logo_url
+        )
+      `)
+      .eq('user_id', data.user.id)
 
     return NextResponse.json({
       success: true,
@@ -110,7 +112,7 @@ export async function POST(request: NextRequest) {
           lastSignInAt: data.user.last_sign_in_at,
           createdAt: data.user.created_at,
         },
-        profile: userProfile || null,
+        profile: userProfile ? { ...userProfile, memberships: memberships || [] } : null,
         session: {
           accessToken: data.session.access_token,
           refreshToken: data.session.refresh_token,

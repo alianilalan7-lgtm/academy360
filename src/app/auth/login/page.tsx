@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -20,7 +20,15 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [justRegistered, setJustRegistered] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('registered') === 'true') {
+      setJustRegistered(true)
+    }
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -50,6 +58,7 @@ export default function LoginPage() {
       const data = await res.json()
 
       if (data.success) {
+        // Redirect to unified dashboard - role is managed by RoleContext
         router.push('/dashboard')
       } else {
         setError(data.error || 'Giris yapilamadi')
@@ -72,6 +81,15 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          {justRegistered && (
+            <div
+              className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700"
+              role="status"
+            >
+              Kayit basarili! Simdi giris yapabilirsiniz.
+            </div>
+          )}
+
           {error && (
             <div
               className="rounded-lg bg-red-50 p-3 text-sm text-red-600"

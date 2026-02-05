@@ -119,9 +119,8 @@ export default function RegisterPage() {
       const data = await res.json()
 
       if (data.success) {
-        // Store email for OTP verification
-        sessionStorage.setItem('verifyEmail', formData.email)
-        router.push('/auth/verify-otp')
+        // Registration complete, redirect to login
+        router.push('/auth/login?registered=true')
       } else {
         setGeneralError(data.error || 'Kayit yapilamadi')
       }

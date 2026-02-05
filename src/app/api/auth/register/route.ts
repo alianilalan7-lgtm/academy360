@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -74,10 +74,14 @@ export async function POST(request: NextRequest) {
       kvkkConsent,
     } = validationResult.data
 
-    const supabase = await createClient()
+    const serviceClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
 
     // Check if user already exists
-    const { data: existingUser } = await supabase
+    const { data: existingUser } = await serviceClient
       .from('user_profiles')
       .select('id')
       .eq('email', email)
@@ -94,19 +98,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get the origin for redirect URL
-    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL
-
-    // Create auth user with Supabase
-    const { data, error } = await supabase.auth.signUp({
+    // Create auth user with admin API (auto-confirmed, no OTP needed)
+    const { data, error } = await serviceClient.auth.admin.createUser({
       email,
       password,
-      options: {
-        emailRedirectTo: `${origin}/api/auth/callback`,
-        data: {
-          full_name: fullName,
-          phone: phone,
-        },
+      email_confirm: true,
+      user_metadata: {
+        full_name: fullName,
+        phone: phone,
       },
     })
 
@@ -147,7 +146,7 @@ export async function POST(request: NextRequest) {
 
     // Create user profile in the database
     // Note: This may also be handled by a database trigger on auth.users
-    const { error: profileError } = await supabase
+    const { error: profileError } = await serviceClient
       .from('user_profiles')
       .upsert({
         id: data.user.id,
@@ -166,9 +165,6 @@ export async function POST(request: NextRequest) {
       // Don't fail the registration, profile might be created by trigger
     }
 
-    // Determine if email confirmation is required
-    const needsEmailConfirmation = !data.session
-
     return NextResponse.json({
       success: true,
       data: {
@@ -178,10 +174,8 @@ export async function POST(request: NextRequest) {
           emailConfirmedAt: data.user.email_confirmed_at,
           createdAt: data.user.created_at,
         },
-        needsEmailConfirmation,
-        message: needsEmailConfirmation
-          ? 'Registration successful. Please check your email to verify your account.'
-          : 'Registration successful.',
+        needsEmailConfirmation: false,
+        message: 'Kayit basarili. Giris yapabilirsiniz.',
       },
       error: null,
     })
