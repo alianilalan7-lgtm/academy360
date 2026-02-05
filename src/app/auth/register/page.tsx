@@ -74,6 +74,8 @@ export default function RegisterPage() {
       newErrors.password = 'Sifre gereklidir'
     } else if (formData.password.length < 8) {
       newErrors.password = 'Sifre en az 8 karakter olmalidir'
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Sifre en az bir buyuk harf, bir kucuk harf ve bir rakam icermelidir'
     }
 
     if (!formData.confirmPassword) {
@@ -106,11 +108,11 @@ export default function RegisterPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
+          fullName: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
           email: formData.email,
-          phone: formData.phone,
+          phone: formData.phone ? `+90${formData.phone.replace(/\s/g, '').replace(/^0/, '')}` : undefined,
           password: formData.password,
+          kvkkConsent: acceptTerms,
         }),
       })
 
