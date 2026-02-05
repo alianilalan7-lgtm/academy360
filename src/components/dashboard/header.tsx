@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useSidebar } from './sidebar-context'
 
 interface HeaderProps {
   title: string
@@ -10,6 +11,7 @@ interface HeaderProps {
 
 export function Header({ title, userName }: HeaderProps) {
   const [unreadCount, setUnreadCount] = useState(0)
+  const { toggle } = useSidebar()
 
   useEffect(() => {
     fetch('/api/notifications?pageSize=1')
@@ -21,9 +23,21 @@ export function Header({ title, userName }: HeaderProps) {
   }, [])
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-      <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-      <div className="flex items-center gap-4">
+    <header className="h-14 sm:h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6">
+      <div className="flex items-center gap-3">
+        {/* Hamburger menu - mobile only */}
+        <button
+          onClick={toggle}
+          className="p-2 -ml-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg lg:hidden"
+          aria-label="Menuyu ac"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900">{title}</h2>
+      </div>
+      <div className="flex items-center gap-2 sm:gap-4">
         <Link
           href="/admin/notifications"
           className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
