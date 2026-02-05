@@ -36,6 +36,12 @@ const navItems: Record<string, NavItem[]> = {
     { label: 'Gelisim', href: '/parent/progress', icon: '📈' },
     { label: 'Odemeler', href: '/parent/payments', icon: '💰' },
   ],
+  super_admin: [
+    { label: 'Dashboard', href: '/super-admin', icon: '🏠' },
+    { label: 'Organizasyonlar', href: '/super-admin/organizations', icon: '🏢' },
+    { label: 'Tum Uyeler', href: '/super-admin/users', icon: '👥' },
+    { label: 'Sistem Ayarlari', href: '/super-admin/settings', icon: '⚙️' },
+  ],
 }
 
 interface SidebarProps {
