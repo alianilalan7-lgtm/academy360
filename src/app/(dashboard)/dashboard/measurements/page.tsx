@@ -93,7 +93,7 @@ export default function MeasurementsPage() {
         const metricsData = await metricsRes.json()
 
         if (athletesData.success) setAthletes(athletesData.data || [])
-        if (metricsData.success) setMetrics(metricsData.data || [])
+        if (metricsData.success) setMetrics(metricsData.data?.metrics || [])
 
         // If preselected athlete, load their history
         if (preselectedAthleteId) {

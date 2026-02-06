@@ -10,32 +10,33 @@ export default function PlayersPage() {
   const [players, setPlayers] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [showAddModal, setShowAddModal] = useState(false)
 
-  // Only coach and admin can view players
   const canView = activeRole === 'coach' || activeRole === 'club_admin'
+
+  async function loadPlayers() {
+    try {
+      let orgId = currentOrgId
+      if (!orgId) {
+        const meRes = await fetch('/api/auth/me')
+        const me = await meRes.json()
+        orgId = me.data?.memberships?.[0]?.organization_id
+      }
+      if (!orgId) return
+
+      const res = await fetch(`/api/athletes?organizationId=${orgId}&pageSize=50`)
+      const data = await res.json()
+      if (data.success) setPlayers(data.data || [])
+    } catch {
+      // silent
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (!canView || roleLoading) return
-
-    async function load() {
-      try {
-        let orgId = currentOrgId
-        if (!orgId) {
-          const meRes = await fetch('/api/auth/me')
-          const me = await meRes.json()
-          orgId = me.data?.memberships?.[0]?.organization_id
-        }
-        if (!orgId) return
-
-        const res = await fetch(`/api/athletes?organizationId=${orgId}&pageSize=50`)
-        const data = await res.json()
-        if (data.success) setPlayers(data.data || [])
-      } catch {
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
+    loadPlayers()
   }, [canView, currentOrgId, roleLoading])
 
   if (roleLoading) {
@@ -54,6 +55,15 @@ export default function PlayersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Oyuncular</h1>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Oyuncu Ekle
+        </button>
       </div>
 
       <input
@@ -67,7 +77,15 @@ export default function PlayersPage() {
       {loading ? (
         <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />)}</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">Sporcu bulunamadi</div>
+        <div className="text-center py-12">
+          <div className="text-gray-400 mb-4">Sporcu bulunamadi</div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            Ilk Oyuncuyu Ekle
+          </button>
+        </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
           {filtered.map((p: any) => (
@@ -94,6 +112,164 @@ export default function PlayersPage() {
           ))}
         </div>
       )}
+
+      {showAddModal && (
+        <AddPlayerModal
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => {
+            setShowAddModal(false)
+            setLoading(true)
+            loadPlayers()
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function AddPlayerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [fullName, setFullName] = useState('')
+  const [position, setPosition] = useState('')
+  const [jerseyNumber, setJerseyNumber] = useState('')
+  const [birthDate, setBirthDate] = useState('')
+  const [dominantFoot, setDominantFoot] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSubmitting(true)
+    setError('')
+
+    try {
+      const res = await fetch('/api/athletes/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName,
+          position: position || null,
+          jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
+          birthDate: birthDate || null,
+          dominantFoot: dominantFoot || null,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (data.success) {
+        onSuccess()
+      } else {
+        setError(data.error || 'Bir hata olustu')
+      }
+    } catch {
+      setError('Baglanti hatasi')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-5 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Yeni Oyuncu Ekle</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Ad Soyad *</label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={e => setFullName(e.target.value)}
+              placeholder="Oyuncu adi"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 bg-white"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Pozisyon</label>
+              <select
+                value={position}
+                onChange={e => setPosition(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 bg-white"
+              >
+                <option value="">Seciniz</option>
+                <option value="Kaleci">Kaleci</option>
+                <option value="Defans">Defans</option>
+                <option value="Orta Saha">Orta Saha</option>
+                <option value="Forvet">Forvet</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Forma No</label>
+              <input
+                type="number"
+                value={jerseyNumber}
+                onChange={e => setJerseyNumber(e.target.value)}
+                placeholder="10"
+                min="0"
+                max="999"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 bg-white"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Dogum Tarihi</label>
+              <input
+                type="date"
+                value={birthDate}
+                onChange={e => setBirthDate(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Baskın Ayak</label>
+              <select
+                value={dominantFoot}
+                onChange={e => setDominantFoot(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 bg-white"
+              >
+                <option value="">Seciniz</option>
+                <option value="right">Sag</option>
+                <option value="left">Sol</option>
+                <option value="both">Her Ikisi</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+            >
+              Iptal
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex-1 py-2.5 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:bg-emerald-400 transition-colors"
+            >
+              {submitting ? 'Kaydediliyor...' : 'Kaydet'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

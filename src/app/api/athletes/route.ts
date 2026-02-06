@@ -52,9 +52,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
 
     // Parse and validate query parameters
     const queryResult = queryParamsSchema.safeParse({
-      organizationId: searchParams.get('organizationId'),
-      groupId: searchParams.get('groupId'),
-      search: searchParams.get('search'),
+      organizationId: searchParams.get('organizationId') || undefined,
+      groupId: searchParams.get('groupId') || undefined,
+      search: searchParams.get('search') || undefined,
       page: searchParams.get('page') ?? 1,
       pageSize: searchParams.get('pageSize') ?? 20,
       sortBy: searchParams.get('sortBy') ?? 'created_at',
@@ -93,12 +93,6 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
           phone,
           locale,
           timezone
-        ),
-        group_members(
-          group_id,
-          role,
-          is_active,
-          group:groups(id, name, age_group)
         )
       `, { count: 'exact' })
       .eq('organization_id', effectiveOrgId)
