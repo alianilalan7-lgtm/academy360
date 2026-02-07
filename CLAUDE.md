@@ -149,20 +149,45 @@ Manual/offline payment tracking only. No online payment gateway. Admins record p
 - Unified Dashboard Migration: Complete - single /dashboard namespace
 - Real Data Integration: Complete - Super Admin, Athletes, all dashboards
 - PWA + Mobile: Complete
+- Phase 2.1 (Exercise Library + Programs): Complete - 6 new tables, 7 API routes, seed data
+- Phase 2.2 (Athlete Tracking): Complete - "Yaptim" system, skill scores, dev notes
+- Phase 2.3 (Coach Tools): Complete - Weekly plan, player comparison
+- Phase 2.4 (Analytics): Complete - Attendance, performance, radar, season charts (pure CSS/SVG)
+- Phase 2.5 (Content + Polish): Complete - 105 exercises, skill scores UI, weakness analysis, development files
 - Build: 0 errors
+
+## Phase 2 - New Tables
+- `exercises` - 105 system exercises (5 categories x 7 exercises x 3 difficulties)
+- `training_templates` - 28 templates (7 age groups x 4 types)
+- `exercise_completions` - "Yaptim" tracking per athlete
+- `skill_scores` - Individual scoring (technical/physical/behavioral)
+- `development_notes` - Coach notes per athlete/session
+- `weekly_plans` - Weekly training plan per group
+
+## Phase 2 - New API Endpoints
+- `/api/exercises` (GET, POST) + `/api/exercises/[id]` (GET, PUT, DELETE)
+- `/api/exercises/[id]/complete` (POST) - "Yaptim" marking
+- `/api/training-templates` (GET, POST)
+- `/api/skill-scores` (GET, POST) - single + bulk scoring
+- `/api/development-notes` (GET, POST)
+- `/api/weekly-plans` (GET, POST)
 
 ## Completed Detail Pages
 - `/dashboard/players/[id]` - Player detail (profile, stats, achievements, measurements, quick actions)
 - `/dashboard/sessions/[id]` - Session detail + bulk attendance recording (present/absent/late/excused)
 - `/dashboard/groups/[id]` - Group detail + member management (add/remove athletes)
 - `/dashboard/measurements` - Add measurement form + history tab with filters
+- `/dashboard/exercises` - Exercise library with category tabs, difficulty filters, "Yaptim" button
+- `/dashboard/programs/[id]` - Program detail with exercises list + coach skill scoring
+- `/dashboard/weekly-plan` - Weekly training plan builder (7-day grid)
+- `/dashboard/compare` - Player comparison (side-by-side skill bars)
+- `/dashboard/analytics` - 4-tab analytics: Attendance bars, Performance line, Radar SVG, Season comparison table
+- `/dashboard/players/[id]` - Skill scores radar chart + weakness analysis + development notes (add/list)
+- `/dashboard/players/[id]/development` - Monthly development file archive (scores, measurements, notes by month)
 
 ## Known Missing Features
-**Pages:**
-- `/dashboard/programs/[id]` - Program detail page
-- Program create/edit form for coaches
-
-**Other:**
+**Remaining:**
+- Video/animation integration for exercises (Supabase Storage or CDN)
 - Member role update (only invite/deactivate exists)
 - Push notifications (SW stubs ready)
 - File uploads (profile photos, documents)
@@ -192,6 +217,51 @@ npx supabase gen types typescript --project-id gfbjixcuknuucoobtvor > src/lib/ty
 npx ts-node scripts/seed-auth-users.ts  # Create auth users
 npx ts-node scripts/run-seed-sql.ts     # Seed database
 ```
+
+## Code Quality Standards (UCES)
+
+### Mandatory State Handling
+All data-fetching components must handle 4 states:
+```typescript
+if (loading) return <LoadingSkeleton />
+if (error) return <ErrorDisplay retry={refetch} />
+if (!data?.length) return <EmptyState action={<CreateButton />} />
+return <Content data={data} />
+```
+
+### API Endpoint Template
+```typescript
+// 1. Authentication
+const user = await requireAuth()
+// 2. Input validation (Zod)
+const parsed = Schema.safeParse(input)
+if (!parsed.success) return badRequest(parsed.error)
+// 3. Authorization (org membership check)
+// 4. Execution with try/catch + user-facing error messages
+```
+
+### Security Checklist
+- Auth check on every protected route/API
+- Org membership verification on every resource access
+- Zod validation on every external input
+- Never expose internal errors to client (generic messages)
+- Never commit .env or credential files
+
+### Prohibited in Production
+- `console.log` for error handling (use `console.error`)
+- Empty event handlers / stub implementations
+- Missing error boundaries on page-level components
+
+### Allowed Exceptions
+- `as any` for complex Supabase `.select()` query results (documented pattern)
+- `TODO` comments only with linked issue/ticket number
+
+## UCES Hooks (Active)
+Automation hooks installed at `~/.claude/hooks/`:
+- **SessionStart**: Project detection + git status + session memory load
+- **PreToolUse**: `.env` edit warnings, `rm -rf` confirmation, force push confirmation, pre-commit TypeScript check + secret scan
+- **PostToolUse**: Auto-format with Prettier after file edits, anti-pattern detection
+- **Stop**: Session memory save
 
 ## Environment Variables
 Required in `.env.local`:

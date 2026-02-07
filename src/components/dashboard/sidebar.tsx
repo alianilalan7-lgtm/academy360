@@ -16,15 +16,21 @@ interface NavItem {
 const navItems: Record<string, NavItem[]> = {
   athlete: [
     { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
+    { label: 'Egzersizler', href: '/dashboard/exercises', icon: '🏋️' },
     { label: 'Programlarim', href: '/dashboard/programs', icon: '📋' },
     { label: 'Gelisimim', href: '/dashboard/progress', icon: '📈' },
+    { label: 'Grafikler', href: '/dashboard/analytics', icon: '📊' },
     { label: 'Basarimlar', href: '/dashboard/achievements', icon: '🏆' },
   ],
   coach: [
     { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
+    { label: 'Egzersizler', href: '/dashboard/exercises', icon: '🏋️' },
     { label: 'Oyuncular', href: '/dashboard/players', icon: '👥' },
+    { label: 'Karsilastir', href: '/dashboard/compare', icon: '⚖️' },
+    { label: 'Haftalik Plan', href: '/dashboard/weekly-plan', icon: '📆' },
     { label: 'Olcumler', href: '/dashboard/measurements', icon: '📏' },
     { label: 'Seanslar', href: '/dashboard/sessions', icon: '📅' },
+    { label: 'Grafikler', href: '/dashboard/analytics', icon: '📊' },
     { label: 'Program Ata', href: '/dashboard/assignments', icon: '📋' },
   ],
   club_admin: [

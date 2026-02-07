@@ -78,6 +78,8 @@ export default function PlayerDetailPage() {
   const [athlete, setAthlete] = useState<Athlete | null>(null)
   const [stats, setStats] = useState<Stats | null>(null)
   const [performance, setPerformance] = useState<PerformanceRecord[]>([])
+  const [skillScores, setSkillScores] = useState<any[]>([])
+  const [devNotes, setDevNotes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -89,15 +91,19 @@ export default function PlayerDetailPage() {
 
     async function load() {
       try {
-        const [athleteRes, statsRes, perfRes] = await Promise.all([
+        const [athleteRes, statsRes, perfRes, scoresRes, notesRes] = await Promise.all([
           fetch(`/api/athletes/${id}`),
           fetch(`/api/athletes/${id}/stats`),
           fetch(`/api/performance/athlete/${id}/history?limit=10`),
+          fetch(`/api/skill-scores?athlete_id=${id}&pageSize=100`),
+          fetch(`/api/development-notes?athlete_id=${id}&pageSize=10`),
         ])
 
         const athleteData = await athleteRes.json()
         const statsData = await statsRes.json()
         const perfData = await perfRes.json()
+        const scoresData = await scoresRes.json()
+        const notesData = await notesRes.json()
 
         if (!athleteData.success) {
           setError(athleteData.error || 'Sporcu bulunamadı')
@@ -107,6 +113,8 @@ export default function PlayerDetailPage() {
         setAthlete(athleteData.data)
         if (statsData.success) setStats(statsData.data)
         if (perfData.success) setPerformance(perfData.data?.records || [])
+        if (scoresData.success) setSkillScores(scoresData.data || [])
+        if (notesData.success) setDevNotes(notesData.data || [])
       } catch {
         setError('Veri yüklenirken hata oluştu')
       } finally {
@@ -391,8 +399,14 @@ export default function PlayerDetailPage() {
         )}
       </div>
 
+      {/* Skill Scores & Weakness Analysis */}
+      <SkillScoresSection scores={skillScores} athleteId={id} />
+
+      {/* Development Notes */}
+      <DevNotesSection notes={devNotes} athleteId={id} onNoteAdded={(note: any) => setDevNotes(prev => [note, ...prev])} />
+
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Link
           href={`/dashboard/measurements?athleteId=${id}`}
           className="flex items-center gap-3 p-4 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition-colors"
@@ -423,6 +437,370 @@ export default function PlayerDetailPage() {
             <p className="text-sm text-gray-500">Detaylı performans analizi</p>
           </div>
         </Link>
+        <Link
+          href={`/dashboard/players/${id}/development`}
+          className="flex items-center gap-3 p-4 bg-orange-50 hover:bg-orange-100 rounded-xl border border-orange-200 transition-colors"
+        >
+          <span className="text-2xl">📂</span>
+          <div>
+            <p className="font-medium text-gray-900">Gelişim Dosyası</p>
+            <p className="text-sm text-gray-500">Ay bazlı gelişim arşivi</p>
+          </div>
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+// --- Skill Scores Section ---
+const SCORE_CATEGORIES = [
+  { key: 'technical', label: 'Teknik', color: '#10B981', bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200' },
+  { key: 'physical', label: 'Fiziksel', color: '#3B82F6', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200' },
+  { key: 'behavioral', label: 'Davranışsal', color: '#F59E0B', bg: 'bg-yellow-50', text: 'text-yellow-600', border: 'border-yellow-200' },
+]
+
+function SkillScoresSection({ scores, athleteId }: { scores: any[]; athleteId: string }) {
+  // Get latest score per skill
+  const latestBySkill: Record<string, { skill_name: string; category: string; score: number }> = {}
+  for (const s of scores) {
+    if (!latestBySkill[s.skill_name] || new Date(s.measured_at) > new Date(latestBySkill[s.skill_name].score as any)) {
+      latestBySkill[s.skill_name] = { skill_name: s.skill_name, category: s.category, score: s.score }
+    }
+  }
+  const latestScores = Object.values(latestBySkill)
+
+  // Category averages
+  const categoryAvg = SCORE_CATEGORIES.map(cat => {
+    const catScores = latestScores.filter(s => s.category === cat.key)
+    const avg = catScores.length ? catScores.reduce((sum, s) => sum + s.score, 0) / catScores.length : 0
+    return { ...cat, avg: Math.round(avg * 10) / 10, count: catScores.length }
+  })
+
+  // Weakness: skills below 5
+  const weakSkills = latestScores.filter(s => s.score < 5).sort((a, b) => a.score - b.score)
+
+  // Radar chart data
+  const radarSkills = latestScores.slice(0, 8)
+  const radarSize = 200
+  const radarCenter = radarSize / 2
+  const radarRadius = 80
+
+  function polarToXY(angle: number, value: number) {
+    const rad = (angle - 90) * (Math.PI / 180)
+    const r = (value / 10) * radarRadius
+    return { x: radarCenter + r * Math.cos(rad), y: radarCenter + r * Math.sin(rad) }
+  }
+
+  const radarPoints = radarSkills.map((s, i) => {
+    const angle = (360 / radarSkills.length) * i
+    return { ...s, ...polarToXY(angle, s.score), angle, labelPos: polarToXY(angle, 12) }
+  })
+
+  const radarPath = radarPoints.length > 2
+    ? radarPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z'
+    : ''
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Radar + Category Averages */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="font-semibold text-gray-900">Beceri Puanları</h2>
+          <Link href={`/dashboard/compare`} className="text-sm text-emerald-600 hover:text-emerald-700">
+            Karşılaştır
+          </Link>
+        </div>
+        <div className="p-5">
+          {latestScores.length > 0 ? (
+            <>
+              {/* Radar Chart */}
+              {radarSkills.length >= 3 && (
+                <div className="flex justify-center mb-4">
+                  <svg width={radarSize} height={radarSize} viewBox={`0 0 ${radarSize} ${radarSize}`}>
+                    {/* Grid circles */}
+                    {[2, 4, 6, 8, 10].map(level => (
+                      <circle
+                        key={level}
+                        cx={radarCenter}
+                        cy={radarCenter}
+                        r={(level / 10) * radarRadius}
+                        fill="none"
+                        stroke="#e5e7eb"
+                        strokeWidth={level === 10 ? 1.5 : 0.5}
+                      />
+                    ))}
+                    {/* Grid lines */}
+                    {radarSkills.map((_, i) => {
+                      const angle = (360 / radarSkills.length) * i
+                      const end = polarToXY(angle, 10)
+                      return (
+                        <line
+                          key={i}
+                          x1={radarCenter}
+                          y1={radarCenter}
+                          x2={end.x}
+                          y2={end.y}
+                          stroke="#e5e7eb"
+                          strokeWidth={0.5}
+                        />
+                      )
+                    })}
+                    {/* Data polygon */}
+                    <path d={radarPath} fill="rgba(16,185,129,0.15)" stroke="#10B981" strokeWidth={2} />
+                    {/* Data points + labels */}
+                    {radarPoints.map((p, i) => (
+                      <g key={i}>
+                        <circle cx={p.x} cy={p.y} r={3} fill="#10B981" />
+                        <text
+                          x={p.labelPos.x}
+                          y={p.labelPos.y}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          className="text-[8px] fill-gray-600"
+                        >
+                          {p.skill_name.length > 8 ? p.skill_name.slice(0, 7) + '..' : p.skill_name}
+                        </text>
+                      </g>
+                    ))}
+                  </svg>
+                </div>
+              )}
+
+              {/* Category averages */}
+              <div className="space-y-2">
+                {categoryAvg.map(cat => (
+                  <div key={cat.key} className={`flex items-center justify-between p-3 rounded-lg ${cat.bg} border ${cat.border}`}>
+                    <span className={`text-sm font-medium ${cat.text}`}>{cat.label}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 h-2 bg-white/60 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${cat.avg * 10}%`, backgroundColor: cat.color }}
+                        />
+                      </div>
+                      <span className={`text-sm font-bold ${cat.text}`}>
+                        {cat.count > 0 ? `${cat.avg}/10` : '-'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+              <div className="text-3xl mb-2">📊</div>
+              <p className="text-sm">Henüz beceri puanı girilmemiş</p>
+              <p className="text-xs mt-1">Programlar sayfasından sporcu puanlayabilirsiniz</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Weakness Analysis */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-200">
+          <h2 className="font-semibold text-gray-900">Eksik Yön Analizi</h2>
+        </div>
+        <div className="p-5">
+          {latestScores.length > 0 ? (
+            <>
+              {weakSkills.length > 0 ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-500 mb-3">
+                    5 puanın altındaki beceriler geliştirilmeli:
+                  </p>
+                  {weakSkills.map(skill => {
+                    const cat = SCORE_CATEGORIES.find(c => c.key === skill.category)
+                    return (
+                      <div key={skill.skill_name} className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium text-gray-700">{skill.skill_name}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${cat?.bg} ${cat?.text}`}>
+                              {cat?.label}
+                            </span>
+                          </div>
+                          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{
+                                width: `${skill.score * 10}%`,
+                                backgroundColor: skill.score < 3 ? '#EF4444' : '#F59E0B',
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <span className={`text-sm font-bold ${skill.score < 3 ? 'text-red-500' : 'text-yellow-500'}`}>
+                          {skill.score}/10
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-3xl mb-2">💪</div>
+                  <p className="text-sm text-emerald-600 font-medium">Tüm beceriler 5 ve üzerinde!</p>
+                  <p className="text-xs text-gray-400 mt-1">Sporcu genel olarak iyi seviyede</p>
+                </div>
+              )}
+
+              {/* All skills bar list */}
+              {latestScores.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-gray-100">
+                  <p className="text-xs text-gray-500 mb-3">Tüm Beceriler ({latestScores.length})</p>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {latestScores.sort((a, b) => b.score - a.score).map(skill => (
+                      <div key={skill.skill_name} className="flex items-center gap-2 text-xs">
+                        <span className="w-20 truncate text-gray-600">{skill.skill_name}</span>
+                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${skill.score * 10}%`,
+                              backgroundColor: skill.score >= 7 ? '#10B981' : skill.score >= 5 ? '#3B82F6' : skill.score >= 3 ? '#F59E0B' : '#EF4444',
+                            }}
+                          />
+                        </div>
+                        <span className="w-6 text-right font-medium text-gray-700">{skill.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+              <div className="text-3xl mb-2">🔍</div>
+              <p className="text-sm">Analiz için beceri puanı gerekli</p>
+              <p className="text-xs mt-1">Puanlar girildikten sonra eksik yönler burada gösterilecek</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// --- Development Notes Section ---
+function DevNotesSection({ notes, athleteId, onNoteAdded }: { notes: any[]; athleteId: string; onNoteAdded: (note: any) => void }) {
+  const [showForm, setShowForm] = useState(false)
+  const [noteText, setNoteText] = useState('')
+  const [noteCategory, setNoteCategory] = useState('general')
+  const [saving, setSaving] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!noteText.trim()) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/development-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          athlete_id: athleteId,
+          note_text: noteText.trim(),
+          category: noteCategory,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        onNoteAdded(data.data)
+        setNoteText('')
+        setShowForm(false)
+      }
+    } catch {
+      // handle silently
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const catLabels: Record<string, { label: string; bg: string; text: string }> = {
+    general: { label: 'Genel', bg: 'bg-gray-100', text: 'text-gray-600' },
+    strength: { label: 'Güçlü Yön', bg: 'bg-emerald-50', text: 'text-emerald-600' },
+    weakness: { label: 'Gelişim Alanı', bg: 'bg-red-50', text: 'text-red-600' },
+    goal: { label: 'Hedef', bg: 'bg-blue-50', text: 'text-blue-600' },
+    behavior: { label: 'Davranış', bg: 'bg-yellow-50', text: 'text-yellow-600' },
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+        <h2 className="font-semibold text-gray-900">Gelişim Notları</h2>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+        >
+          {showForm ? 'İptal' : '+ Not Ekle'}
+        </button>
+      </div>
+
+      {/* Add note form */}
+      {showForm && (
+        <form onSubmit={handleSubmit} className="p-5 border-b border-gray-100 bg-gray-50 space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+            <select
+              value={noteCategory}
+              onChange={e => setNoteCategory(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            >
+              {Object.entries(catLabels).map(([key, val]) => (
+                <option key={key} value={key}>{val.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Not</label>
+            <textarea
+              value={noteText}
+              onChange={e => setNoteText(e.target.value)}
+              rows={3}
+              placeholder="Sporcu hakkında gelişim notu yazın..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={saving || !noteText.trim()}
+            className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+          >
+            {saving ? 'Kaydediliyor...' : 'Notu Kaydet'}
+          </button>
+        </form>
+      )}
+
+      <div className="p-5">
+        {notes.length > 0 ? (
+          <div className="space-y-3">
+            {notes.map((note: any) => {
+              const cat = catLabels[note.category] || catLabels.general
+              return (
+                <div key={note.id} className="p-3 border border-gray-100 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${cat.bg} ${cat.text} font-medium`}>
+                      {cat.label}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(note.created_at).toLocaleDateString('tr-TR')}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700">{note.note_text}</p>
+                  {note.coach_name && (
+                    <p className="text-xs text-gray-400 mt-2">— {note.coach_name}</p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-400">
+            <div className="text-3xl mb-2">📝</div>
+            <p className="text-sm">Henüz gelişim notu yok</p>
+            <p className="text-xs mt-1">&ldquo;Not Ekle&rdquo; ile ilk notu oluşturun</p>
+          </div>
+        )}
       </div>
     </div>
   )
