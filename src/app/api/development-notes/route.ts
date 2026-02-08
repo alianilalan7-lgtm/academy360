@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import type { ApiResponse, PaginatedResponse, DevelopmentNote } from '@/lib/types'
 
@@ -23,7 +23,7 @@ const noteCreateSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     const { searchParams } = new URL(request.url)
     const queryParams = Object.fromEntries(searchParams.entries())
@@ -50,6 +50,11 @@ export async function GET(request: NextRequest) {
     if (athlete_id) query = query.eq('athlete_id', athlete_id)
     if (session_id) query = query.eq('session_id', session_id)
     if (category) query = query.eq('category', category)
+
+    // Athletes and parents can only see non-private notes
+    if (!isAdmin(user) && !isCoach(user)) {
+      query = query.eq('is_private', false)
+    }
 
     query = query.order('created_at', { ascending: false })
 
@@ -90,7 +95,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ data: null, error: 'Yetkiniz yok', success: false }, { status: 403 })
     }
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const body = await request.json()
 
     const validationResult = noteCreateSchema.safeParse(body)

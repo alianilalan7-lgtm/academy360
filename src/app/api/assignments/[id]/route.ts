@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach, isAthlete } from '@/lib/auth'
 import type { ApiResponse, AssignedProgram } from '@/lib/types'
 
@@ -27,7 +27,7 @@ export async function GET(
 ) {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id } = await params
 
     // Validate UUID
@@ -148,7 +148,7 @@ export async function PATCH(
 ) {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id } = await params
 
     // Validate UUID
@@ -316,7 +316,7 @@ export async function DELETE(
 ) {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id } = await params
 
     // Only coaches and admins can cancel assignments

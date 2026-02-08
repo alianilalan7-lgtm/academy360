@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -37,7 +37,7 @@ export async function GET(
 ): Promise<NextResponse<ApiResponse<AthleteGoalWithMetric>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id, goalId } = await params
 
     // Validate UUID formats
@@ -151,7 +151,7 @@ export async function PATCH(
 ): Promise<NextResponse<ApiResponse<AthleteGoalWithMetric>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id, goalId } = await params
 
     // Validate UUID formats
@@ -391,7 +391,7 @@ export async function DELETE(
 ): Promise<NextResponse<ApiResponse<{ deleted: boolean }>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id, goalId } = await params
 
     // Validate UUID formats
@@ -493,7 +493,7 @@ export async function DELETE(
 async function checkGoalAccess(
   user: Awaited<ReturnType<typeof requireAuth>>,
   athlete: { user_id: string; organization_id: string },
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createServiceClient>>
 ): Promise<boolean> {
   // Admins and coaches in the same org can access
   const isOrgStaff = user.memberships.some(
@@ -527,7 +527,7 @@ async function checkGoalAccess(
 async function checkGoalUpdateAccess(
   user: Awaited<ReturnType<typeof requireAuth>>,
   athlete: { user_id: string; organization_id: string },
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createServiceClient>>
 ): Promise<boolean> {
   // Admins in the same org can update
   const isOrgAdmin = user.memberships.some(
@@ -560,7 +560,7 @@ async function checkGoalUpdateAccess(
 async function checkGoalDeleteAccess(
   user: Awaited<ReturnType<typeof requireAuth>>,
   athlete: { user_id: string; organization_id: string },
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createServiceClient>>
 ): Promise<boolean> {
   // Admins in the same org can delete
   const isOrgAdmin = user.memberships.some(

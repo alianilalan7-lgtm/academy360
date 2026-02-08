@@ -48,6 +48,7 @@ function CompareContent() {
   const [scores2, setScores2] = useState<SkillData[]>([])
   const [loading, setLoading] = useState(true)
   const [comparing, setComparing] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     async function loadAthletes() {
@@ -69,7 +70,7 @@ function CompareContent() {
           })))
         }
       } catch {
-        // handle silently
+        setError('Sporcular yuklenirken hata olustu. Lutfen sayfayi yenileyin.')
       } finally {
         setLoading(false)
       }
@@ -83,10 +84,10 @@ function CompareContent() {
     if (!data.success) return []
 
     // Get latest score per skill
-    const latest: Record<string, SkillData> = {}
+    const latest: Record<string, SkillData & { measured_at: string }> = {}
     for (const s of data.data || []) {
-      if (!latest[s.skill_name] || new Date(s.measured_at) > new Date(latest[s.skill_name].score)) {
-        latest[s.skill_name] = { skill_name: s.skill_name, category: s.category, score: s.score }
+      if (!latest[s.skill_name] || new Date(s.measured_at) > new Date(latest[s.skill_name].measured_at)) {
+        latest[s.skill_name] = { skill_name: s.skill_name, category: s.category, score: s.score, measured_at: s.measured_at }
       }
     }
     return Object.values(latest)
@@ -122,6 +123,12 @@ function CompareContent() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Oyuncu Karsilastirma</h1>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       {/* Selection */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { getAuthUser, isAdmin } from '@/lib/auth'
 
 /**
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { searchParams } = new URL(request.url)
 
     // Parse query parameters
@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Check if code already exists for this organization or as a system metric
     const { data: existing, error: existingError } = await supabase
@@ -335,7 +335,7 @@ function groupMetricsByCategory(
  * Add usage statistics to metrics
  */
 async function addUsageStatistics(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
   metrics: MetricType[],
   organizationId: string | null
 ): Promise<MetricWithStats[]> {

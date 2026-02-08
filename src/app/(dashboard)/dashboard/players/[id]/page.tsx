@@ -461,10 +461,10 @@ const SCORE_CATEGORIES = [
 
 function SkillScoresSection({ scores, athleteId }: { scores: any[]; athleteId: string }) {
   // Get latest score per skill
-  const latestBySkill: Record<string, { skill_name: string; category: string; score: number }> = {}
+  const latestBySkill: Record<string, { skill_name: string; category: string; score: number; measured_at: string }> = {}
   for (const s of scores) {
-    if (!latestBySkill[s.skill_name] || new Date(s.measured_at) > new Date(latestBySkill[s.skill_name].score as any)) {
-      latestBySkill[s.skill_name] = { skill_name: s.skill_name, category: s.category, score: s.score }
+    if (!latestBySkill[s.skill_name] || new Date(s.measured_at) > new Date(latestBySkill[s.skill_name].measured_at)) {
+      latestBySkill[s.skill_name] = { skill_name: s.skill_name, category: s.category, score: s.score, measured_at: s.measured_at }
     }
   }
   const latestScores = Object.values(latestBySkill)
@@ -699,7 +699,7 @@ function DevNotesSection({ notes, athleteId, onNoteAdded }: { notes: any[]; athl
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           athlete_id: athleteId,
-          note_text: noteText.trim(),
+          note: noteText.trim(),
           category: noteCategory,
         }),
       })
@@ -786,7 +786,7 @@ function DevNotesSection({ notes, athleteId, onNoteAdded }: { notes: any[]; athl
                       {new Date(note.created_at).toLocaleDateString('tr-TR')}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-700">{note.note_text}</p>
+                  <p className="text-sm text-gray-700">{note.note || note.note_text}</p>
                   {note.coach_name && (
                     <p className="text-xs text-gray-400 mt-2">— {note.coach_name}</p>
                   )}

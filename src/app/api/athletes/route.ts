@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, requireRole, isAdmin, isCoach } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       )
     }
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { searchParams } = new URL(request.url)
 
     // Parse and validate query parameters
@@ -211,7 +211,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
 export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse<AthleteWithProfile>>> {
   try {
     const user = await requireRole(['club_admin', 'super_admin', 'coach'])
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Parse and validate request body
     const body = await request.json()

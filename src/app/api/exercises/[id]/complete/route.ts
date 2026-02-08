@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/auth'
 
 const completionSchema = z.object({
@@ -20,7 +20,7 @@ export async function POST(
   try {
     const user = await requireAuth()
     const { id: exerciseId } = await params
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Get athlete profile
     const { data: athleteProfile } = await supabase

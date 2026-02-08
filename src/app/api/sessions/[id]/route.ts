@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -39,7 +39,7 @@ export async function GET(
 ): Promise<NextResponse<ApiResponse<SessionWithAttendance>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id } = await params
 
     // Validate UUID format
@@ -144,7 +144,7 @@ export async function PATCH(
 ): Promise<NextResponse<ApiResponse<Session>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id } = await params
 
     // Validate UUID format
@@ -372,7 +372,7 @@ export async function DELETE(
 ): Promise<NextResponse<ApiResponse<{ deleted: boolean }>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id } = await params
 
     // Only admins can delete sessions
@@ -484,7 +484,7 @@ export async function DELETE(
 async function checkSessionAccess(
   user: Awaited<ReturnType<typeof requireAuth>>,
   session: { organization_id: string; group_id: string | null },
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createServiceClient>>
 ): Promise<boolean> {
   // Admins and coaches in the same org can access all sessions
   const isOrgStaff = user.memberships.some(

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach, isParent } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -33,7 +33,7 @@ export async function GET(
 ): Promise<NextResponse<ApiResponse<AthleteAchievementWithDetails[]> | { success: false; error: string; total?: number; page?: number; pageSize?: number; totalPages?: number }>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id } = await params
 
     // Validate UUID format
@@ -217,7 +217,7 @@ export async function GET(
 async function checkAchievementsAccess(
   user: Awaited<ReturnType<typeof requireAuth>>,
   athlete: { user_id: string; organization_id: string },
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createServiceClient>>
 ): Promise<boolean> {
   // Admins and coaches in the same org can access
   const isOrgStaff = user.memberships.some(

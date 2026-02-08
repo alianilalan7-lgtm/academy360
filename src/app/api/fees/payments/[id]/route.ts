@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const user = await requireAuth()
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     const { data, error } = await supabase
       .from('fee_payments')
@@ -32,7 +32,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json({ success: true, data })
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 })
+    console.error('GET /api/fees/payments/[id] error:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ success: false, data: null, error: 'Unauthorized' }, { status: 401 })
+    }
+    return NextResponse.json({ success: false, data: null, error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -46,7 +50,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { id } = await params
     const body = await request.json()
     const updates = updateSchema.parse(body)
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     const updateData: Record<string, unknown> = {}
     if (updates.status) updateData.status = updates.status
@@ -70,9 +74,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     return NextResponse.json({ success: true, data })
   } catch (error) {
+    console.error('PATCH /api/fees/payments/[id] error:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ success: false, data: null, error: 'Unauthorized' }, { status: 401 })
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json({ success: false, error: 'Validation error', details: error.issues }, { status: 400 })
     }
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 })
+    return NextResponse.json({ success: false, data: null, error: 'Internal server error' }, { status: 500 })
   }
 }

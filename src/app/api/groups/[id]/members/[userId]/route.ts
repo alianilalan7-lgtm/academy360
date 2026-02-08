@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -19,7 +19,7 @@ export async function DELETE(
 ): Promise<NextResponse<ApiResponse<{ removed: boolean }>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id: groupId, userId: targetUserId } = await params
 
     // Validate UUID formats
@@ -126,7 +126,7 @@ async function checkRemoveMemberAccess(
   user: Awaited<ReturnType<typeof requireAuth>>,
   group: { organization_id: string; id: string },
   targetMembership: { user_id: string; role: string | null },
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createServiceClient>>
 ): Promise<boolean> {
   // Users can remove themselves from a group
   if (user.id === targetMembership.user_id) {

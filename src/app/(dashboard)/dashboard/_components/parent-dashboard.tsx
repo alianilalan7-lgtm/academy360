@@ -53,7 +53,8 @@ export function ParentDashboardContent() {
   const [parentName, setParentName] = useState('')
   const [relations, setRelations] = useState<ParentRelation[]>([])
   const [athletes, setAthletes] = useState<AthleteProfile[]>([])
-  const [stats, setStats] = useState<AthleteStats | null>(null)
+  const [selectedAthleteId, setSelectedAthleteId] = useState<string | null>(null)
+  const [statsMap, setStatsMap] = useState<Record<string, AthleteStats>>({})
 
   useEffect(() => {
     async function load() {
@@ -86,12 +87,20 @@ export function ParentDashboardContent() {
             )
             setAthletes(linkedAthletes)
 
+            // Load stats for all children in parallel
             if (linkedAthletes.length > 0) {
-              const statsRes = await fetch(`/api/athletes/${linkedAthletes[0].id}/stats`)
-              const statsData = await statsRes.json()
-              if (statsData.success) {
-                setStats(statsData.data)
+              setSelectedAthleteId(linkedAthletes[0].id)
+              const statsPromises = linkedAthletes.map(async (a: AthleteProfile) => {
+                const statsRes = await fetch(`/api/athletes/${a.id}/stats`)
+                const statsData = await statsRes.json()
+                return { id: a.id, stats: statsData.success ? statsData.data : null }
+              })
+              const results = await Promise.all(statsPromises)
+              const map: Record<string, AthleteStats> = {}
+              for (const r of results) {
+                if (r.stats) map[r.id] = r.stats
               }
+              setStatsMap(map)
             }
           }
         }
@@ -104,11 +113,13 @@ export function ParentDashboardContent() {
     load()
   }, [currentOrgId])
 
+  const selectedStats = selectedAthleteId ? statsMap[selectedAthleteId] : null
+  const selectedAthlete = athletes.find(a => a.id === selectedAthleteId)
+
   if (loading) {
     return (
       <div className="space-y-6">
         <div className="h-8 bg-gray-200 rounded w-64 animate-pulse" />
-        <div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map(i => (
             <div key={i} className="h-32 bg-gray-200 rounded-xl animate-pulse" />
@@ -123,7 +134,7 @@ export function ParentDashboardContent() {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Veli Paneli</h1>
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-          <div className="text-4xl mb-3">&#9888;&#65039;</div>
+          <div className="text-4xl mb-3">&#9888;</div>
           <p className="text-gray-500">{error}</p>
         </div>
       </div>
@@ -139,44 +150,72 @@ export function ParentDashboardContent() {
         <p className="text-gray-500">Cocugunuzun gelisimini takip edin</p>
       </div>
 
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Child selector (if multiple children) */}
+      {athletes.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {athletes.map(athlete => (
+            <button
+              key={athlete.id}
+              onClick={() => setSelectedAthleteId(athlete.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                selectedAthleteId === athlete.id
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">
+                {(athlete.user_profile?.full_name || '?').charAt(0).toUpperCase()}
+              </span>
+              {athlete.user_profile?.full_name || 'Sporcu'}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Stats for selected child */}
+      {selectedStats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white p-5 rounded-xl border border-gray-200">
             <div className="text-sm text-gray-500">Seviye</div>
-            <div className="text-3xl font-bold text-emerald-600 mt-1">{stats.currentLevel}</div>
+            <div className="text-3xl font-bold text-emerald-600 mt-1">{selectedStats.currentLevel}</div>
             <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-emerald-500 rounded-full"
-                style={{ width: `${Math.min(((stats.totalXp % 1000) / 1000) * 100, 100)}%` }}
+                style={{ width: `${Math.min(((selectedStats.totalXp % 1000) / 1000) * 100, 100)}%` }}
               />
             </div>
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-gray-200">
             <div className="text-sm text-gray-500">Toplam XP</div>
-            <div className="text-3xl font-bold text-blue-600 mt-1">{stats.totalXp}</div>
+            <div className="text-3xl font-bold text-blue-600 mt-1">{selectedStats.totalXp}</div>
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-gray-200">
             <div className="text-sm text-gray-500">Seri</div>
-            <div className="text-3xl font-bold text-orange-500 mt-1">{stats.streakDays} gun</div>
+            <div className="text-3xl font-bold text-orange-500 mt-1">{selectedStats.streakDays} gun</div>
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-gray-200">
-            <div className="text-sm text-gray-500">Tamamlanan Program</div>
-            <div className="text-3xl font-bold text-purple-600 mt-1">{stats.completedPrograms}</div>
+            <div className="text-sm text-gray-500">Tamamlanan</div>
+            <div className="text-3xl font-bold text-purple-600 mt-1">{selectedStats.completedPrograms}</div>
+            <div className="text-xs text-gray-400">program</div>
           </div>
         </div>
       )}
 
+      {/* Children cards */}
       {athletes.length > 0 ? (
         <div>
           <h2 className="font-semibold text-gray-900 mb-3">Cocuklariniz</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {athletes.map((athlete) => {
               const relation = relations.find(r => r.athlete_user_id === athlete.user_id)
+              const childStats = statsMap[athlete.id]
               return (
-                <div key={athlete.id} className="bg-white p-5 rounded-xl border border-gray-200">
+                <div key={athlete.id} className={`bg-white p-5 rounded-xl border transition-colors ${
+                  selectedAthleteId === athlete.id ? 'border-emerald-300 ring-1 ring-emerald-200' : 'border-gray-200'
+                }`}>
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-lg font-bold text-emerald-600">
                       {(athlete.user_profile?.full_name || '?').charAt(0).toUpperCase()}
@@ -243,7 +282,7 @@ export function ParentDashboardContent() {
           href="/dashboard/progress"
           className="bg-emerald-50 p-6 rounded-xl border border-emerald-200 hover:bg-emerald-100 transition-colors"
         >
-          <div className="text-2xl mb-2">&#128200;</div>
+          <div className="text-2xl mb-2">📈</div>
           <h3 className="font-semibold text-emerald-800">Gelisimi Gor</h3>
           <p className="text-sm text-emerald-600 mt-1">
             Cocugunuzun performans gelisimini ve basarimlarini inceleyin
@@ -254,7 +293,7 @@ export function ParentDashboardContent() {
           href="/dashboard/payments"
           className="bg-blue-50 p-6 rounded-xl border border-blue-200 hover:bg-blue-100 transition-colors"
         >
-          <div className="text-2xl mb-2">&#128179;</div>
+          <div className="text-2xl mb-2">💳</div>
           <h3 className="font-semibold text-blue-800">Odemeleri Gor</h3>
           <p className="text-sm text-blue-600 mt-1">
             Aidat odemelerinizi ve odeme gecmisinizi goruntuleyin
@@ -262,14 +301,17 @@ export function ParentDashboardContent() {
         </Link>
       </div>
 
-      {stats && stats.recentAchievements && stats.recentAchievements.length > 0 && (
+      {/* Recent achievements from selected child */}
+      {selectedStats && selectedStats.recentAchievements && selectedStats.recentAchievements.length > 0 && (
         <div className="bg-white p-6 rounded-xl border border-gray-200">
-          <h3 className="font-semibold text-gray-900 mb-4">Son Basarimlar</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">
+            Son Basarimlar {selectedAthlete ? `- ${selectedAthlete.user_profile?.full_name}` : ''}
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {stats.recentAchievements.map((a: any) => (
+            {selectedStats.recentAchievements.map((a: any) => (
               <div key={a.id} className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
                 <div className="w-10 h-10 bg-yellow-200 rounded-full flex items-center justify-center text-xl">
-                  &#127942;
+                  🏆
                 </div>
                 <div>
                   <div className="font-medium text-sm">{a.achievement?.name}</div>

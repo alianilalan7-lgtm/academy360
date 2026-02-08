@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach, isAthlete } from '@/lib/auth'
 import type { ApiResponse, TrainingLog, CompletionStatus } from '@/lib/types'
 import type { Json } from '@/lib/types/database'
@@ -55,7 +55,7 @@ function calculateXp(completionStatus: CompletionStatus): number {
  * Update athlete's total XP
  */
 async function updateAthleteXp(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
   athleteId: string,
   xpDelta: number
 ): Promise<void> {
@@ -92,7 +92,7 @@ async function updateAthleteXp(
  * Update assignment progress based on training logs
  */
 async function updateAssignmentProgress(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
   assignedProgramId: string
 ): Promise<void> {
   const { data: logs, error: logsError } = await supabase
@@ -140,7 +140,7 @@ export async function GET(
 ) {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id } = await params
 
     // Validate UUID
@@ -256,7 +256,7 @@ export async function PATCH(
 ) {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id } = await params
 
     // Validate UUID

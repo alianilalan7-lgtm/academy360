@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach, isAthlete, isParent } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -32,7 +32,7 @@ export async function GET(
 ): Promise<NextResponse<ApiResponse<AthleteWithProfile>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id } = await params
 
     // Validate UUID format
@@ -123,7 +123,7 @@ export async function PATCH(
 ): Promise<NextResponse<ApiResponse<AthleteWithProfile>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id } = await params
 
     // Validate UUID format
@@ -311,7 +311,7 @@ export async function DELETE(
 ): Promise<NextResponse<ApiResponse<{ deleted: boolean }>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id } = await params
 
     // Only admins can delete athlete profiles
@@ -418,7 +418,7 @@ export async function DELETE(
 async function checkAthleteAccess(
   user: Awaited<ReturnType<typeof requireAuth>>,
   athlete: { user_id: string; organization_id: string },
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createServiceClient>>
 ): Promise<boolean> {
   // Admins and coaches in the same org can access
   const isOrgStaff = user.memberships.some(
@@ -454,7 +454,7 @@ async function checkAthleteAccess(
 async function checkAthleteUpdateAccess(
   user: Awaited<ReturnType<typeof requireAuth>>,
   athlete: { user_id: string; organization_id: string },
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createServiceClient>>
 ): Promise<boolean> {
   // Admins in the same org can update
   const isOrgAdmin = user.memberships.some(

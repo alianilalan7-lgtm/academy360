@@ -30,10 +30,12 @@ function AdminPaymentsContent() {
   const [payments, setPayments] = useState<any[]>([])
   const [statusFilter, setStatusFilter] = useState('all')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     async function load() {
       setLoading(true)
+      setError('')
       try {
         const url = statusFilter === 'all'
           ? '/api/fees/payments'
@@ -42,7 +44,9 @@ function AdminPaymentsContent() {
         const res = await fetch(url)
         const data = await res.json()
         if (data.success) setPayments(data.data || [])
+        else setError(data.error || 'Odeme verileri yuklenemedi')
       } catch {
+        setError('Odeme verileri yuklenirken hata olustu. Lutfen sayfayi yenileyin.')
       } finally {
         setLoading(false)
       }
@@ -96,6 +100,12 @@ function AdminPaymentsContent() {
         ))}
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
       {loading ? (
         <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />)}</div>
       ) : payments.length === 0 ? (
@@ -146,14 +156,17 @@ function AdminPaymentsContent() {
 function ParentPaymentsContent() {
   const [payments, setPayments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch('/api/fees/payments/my')
+        const res = await fetch('/api/fees/payments')
         const data = await res.json()
         if (data.success) setPayments(data.data || [])
+        else setError(data.error || 'Odeme verileri yuklenemedi')
       } catch {
+        setError('Odeme verileri yuklenirken hata olustu. Lutfen sayfayi yenileyin.')
       } finally {
         setLoading(false)
       }
@@ -184,7 +197,13 @@ function ParentPaymentsContent() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Odemelerim</h1>
 
-      {payments.length === 0 ? (
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
+      {payments.length === 0 && !error ? (
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
           <div className="text-4xl mb-3">💰</div>
           <p className="text-gray-500">Henuz odeme kaydi bulunamadi.</p>

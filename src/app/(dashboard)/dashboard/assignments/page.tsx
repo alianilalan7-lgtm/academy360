@@ -155,7 +155,7 @@ export default function AssignmentsPage() {
               <select
                 value={form.athleteId}
                 onChange={e => setForm({ ...form, athleteId: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 required
               >
                 <option value="">Sporcu secin...</option>
@@ -172,7 +172,7 @@ export default function AssignmentsPage() {
               <select
                 value={form.programId}
                 onChange={e => setForm({ ...form, programId: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 required
               >
                 <option value="">Program secin...</option>
@@ -192,7 +192,7 @@ export default function AssignmentsPage() {
                 type="date"
                 value={form.startDate}
                 onChange={e => setForm({ ...form, startDate: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
             <div>
@@ -201,7 +201,7 @@ export default function AssignmentsPage() {
                 type="date"
                 value={form.dueDate}
                 onChange={e => setForm({ ...form, dueDate: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
           </div>

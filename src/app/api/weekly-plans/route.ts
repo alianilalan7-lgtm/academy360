@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import type { ApiResponse, WeeklyPlan } from '@/lib/types'
 
@@ -20,7 +20,7 @@ const planCreateSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     const { searchParams } = new URL(request.url)
     const queryParams = Object.fromEntries(searchParams.entries())
@@ -46,6 +46,11 @@ export async function GET(request: NextRequest) {
 
     if (group_id) query = query.eq('group_id', group_id)
     if (week_start) query = query.eq('week_start', week_start)
+
+    // Athletes and parents can only see published plans
+    if (!isAdmin(user) && !isCoach(user)) {
+      query = query.eq('is_published', true)
+    }
 
     query = query.order('week_start', { ascending: false })
 
@@ -74,7 +79,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ data: null, error: 'Yetkiniz yok', success: false }, { status: 403 })
     }
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const body = await request.json()
 
     const validationResult = planCreateSchema.safeParse(body)
@@ -107,6 +112,57 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: plan, error: null, success: true }, { status: 201 })
   } catch (error) {
     console.error('Weekly plans POST error:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ data: null, error: 'Unauthorized', success: false }, { status: 401 })
+    }
+    return NextResponse.json({ data: null, error: 'Internal server error', success: false }, { status: 500 })
+  }
+}
+
+const planUpdateSchema = z.object({
+  id: z.string().uuid(),
+  plan_data: z.record(z.string(), z.any()).optional(),
+  notes: z.string().optional().nullable(),
+  is_published: z.boolean().optional(),
+})
+
+export async function PUT(request: NextRequest) {
+  try {
+    const user = await requireAuth()
+    if (!isAdmin(user) && !isCoach(user)) {
+      return NextResponse.json({ data: null, error: 'Yetkiniz yok', success: false }, { status: 403 })
+    }
+
+    const supabase = await createServiceClient()
+    const body = await request.json()
+
+    const validationResult = planUpdateSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json({
+        data: null,
+        error: validationResult.error.issues.map((e: z.ZodIssue) => e.message).join(', '),
+        success: false,
+      }, { status: 400 })
+    }
+
+    const { id, ...updateData } = validationResult.data
+
+    const { data: plan, error } = await (supabase as any)
+      .from('weekly_plans')
+      .update(updateData)
+      .eq('id', id)
+      .eq('organization_id', user.currentOrganizationId!)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating weekly plan:', error)
+      return NextResponse.json({ data: null, error: 'Plan guncellenemedi', success: false }, { status: 500 })
+    }
+
+    return NextResponse.json({ data: plan, error: null, success: true })
+  } catch (error) {
+    console.error('Weekly plans PUT error:', error)
     if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ data: null, error: 'Unauthorized', success: false }, { status: 401 })
     }

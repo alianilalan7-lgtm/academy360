@@ -181,7 +181,7 @@ function CoachSessionsContent() {
               value={form.title}
               onChange={e => setForm({ ...form, title: e.target.value })}
               placeholder="Seans basligi"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               required
             />
           </div>
@@ -193,7 +193,7 @@ function CoachSessionsContent() {
                 type="datetime-local"
                 value={form.scheduledStart}
                 onChange={e => setForm({ ...form, scheduledStart: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 required
               />
             </div>
@@ -203,7 +203,7 @@ function CoachSessionsContent() {
                 type="datetime-local"
                 value={form.scheduledEnd}
                 onChange={e => setForm({ ...form, scheduledEnd: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
           </div>
@@ -216,7 +216,7 @@ function CoachSessionsContent() {
                 value={form.location}
                 onChange={e => setForm({ ...form, location: e.target.value })}
                 placeholder="Seans yeri"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
             <div>
@@ -224,7 +224,7 @@ function CoachSessionsContent() {
               <select
                 value={form.groupId}
                 onChange={e => setForm({ ...form, groupId: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               >
                 <option value="">Grup secin (opsiyonel)</option>
                 {groups.map((g: any) => (

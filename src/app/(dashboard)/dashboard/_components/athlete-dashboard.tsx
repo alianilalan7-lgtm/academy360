@@ -1,10 +1,35 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 interface DashboardData {
   profile: any
   stats: any
+  todayPlan: { title: string; type: string; duration: number; notes: string } | null
+  groupName: string
+}
+
+const SESSION_TYPE_LABELS: Record<string, string> = {
+  technical: 'Teknik',
+  tactical: 'Taktik',
+  physical: 'Fiziksel',
+  game_based: 'Oyun Temelli',
+  match: 'Mac',
+  rest: 'Dinlenme',
+}
+
+function getMonday(d: Date): string {
+  const date = new Date(d)
+  const day = date.getDay()
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1)
+  date.setDate(diff)
+  return date.toISOString().split('T')[0]
+}
+
+function getTodayKey(): string {
+  const keys = ['pazar', 'pazartesi', 'sali', 'carsamba', 'persembe', 'cuma', 'cumartesi']
+  return keys[new Date().getDay()]
 }
 
 export function AthleteDashboardContent() {
@@ -22,10 +47,32 @@ export function AthleteDashboardContent() {
         const athleteProfile = athleteProfiles[0]
         if (!athleteProfile) return
 
-        const statsRes = await fetch(`/api/athletes/${athleteProfile.id}/stats`)
+        // Fetch stats and group info in parallel
+        const [statsRes, groupsRes] = await Promise.all([
+          fetch(`/api/athletes/${athleteProfile.id}/stats`),
+          fetch('/api/my-groups'),
+        ])
         const stats = await statsRes.json()
+        const groupsData = await groupsRes.json()
 
-        setData({ profile: athleteProfile, stats: stats.data })
+        let todayPlan = null
+        let groupName = ''
+
+        // If athlete has a group, fetch this week's plan
+        if (groupsData.success && groupsData.data?.length > 0) {
+          const group = groupsData.data[0]
+          groupName = group.name || ''
+          const weekStart = getMonday(new Date())
+          const planRes = await fetch(`/api/weekly-plans?group_id=${group.id}&week_start=${weekStart}`)
+          const planData = await planRes.json()
+          if (planData.success && planData.data?.length > 0) {
+            const plan = planData.data[0]
+            const todayKey = getTodayKey()
+            todayPlan = plan.plan_data?.[todayKey] || null
+          }
+        }
+
+        setData({ profile: athleteProfile, stats: stats.data, todayPlan, groupName })
       } catch {
       } finally {
         setLoading(false)
@@ -82,6 +129,51 @@ export function AthleteDashboardContent() {
           <div className="text-xs text-gray-400">program</div>
         </div>
       </div>
+
+      {/* Today's Plan Card */}
+      {data?.todayPlan && data.todayPlan.type ? (
+        <Link href="/dashboard/my-plan" className="block">
+          <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl p-5 text-white hover:from-emerald-600 hover:to-emerald-700 transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-emerald-100 text-sm font-medium">Bugunun Antrenman Plani</div>
+                <div className="text-xl font-bold mt-1">
+                  {data.todayPlan.type === 'rest' ? '😴 Dinlenme Gunu' : data.todayPlan.title || SESSION_TYPE_LABELS[data.todayPlan.type] || 'Antrenman'}
+                </div>
+                <div className="flex items-center gap-3 mt-2 text-emerald-100 text-sm">
+                  {data.todayPlan.type !== 'rest' && (
+                    <>
+                      <span>{SESSION_TYPE_LABELS[data.todayPlan.type] || data.todayPlan.type}</span>
+                      {data.todayPlan.duration > 0 && <span>| {data.todayPlan.duration} dk</span>}
+                    </>
+                  )}
+                  {data.groupName && <span>| {data.groupName}</span>}
+                </div>
+              </div>
+              <div className="text-4xl opacity-80">
+                {data.todayPlan.type === 'rest' ? '😴' : '⚽'}
+              </div>
+            </div>
+            {data.todayPlan.notes && data.todayPlan.type !== 'rest' && (
+              <p className="mt-3 text-sm text-emerald-100 bg-white/10 rounded-lg p-2">{data.todayPlan.notes}</p>
+            )}
+          </div>
+        </Link>
+      ) : (
+        <Link href="/dashboard/my-plan" className="block">
+          <div className="bg-white rounded-xl border border-gray-200 p-5 hover:border-emerald-300 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm text-gray-500">Bugunun Plani</div>
+                <div className="text-gray-700 font-medium mt-1">
+                  {data?.groupName ? 'Bugun icin plan henuz yok' : 'Haftalik plani goruntule'}
+                </div>
+              </div>
+              <span className="text-2xl">📋</span>
+            </div>
+          </div>
+        </Link>
+      )}
 
       {/* Weekly Progress */}
       <div className="bg-white p-6 rounded-xl border border-gray-200">

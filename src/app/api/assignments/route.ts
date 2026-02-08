@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach, isAthlete } from '@/lib/auth'
 import type { ApiResponse, PaginatedResponse, AssignedProgram } from '@/lib/types'
 
@@ -35,7 +35,7 @@ const assignmentQuerySchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Parse query parameters
     const { searchParams } = new URL(request.url)
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response, { status: 403 })
     }
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const body = await request.json()
 
     // Validate request body

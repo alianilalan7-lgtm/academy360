@@ -16,11 +16,13 @@ interface NavItem {
 const navItems: Record<string, NavItem[]> = {
   athlete: [
     { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
+    { label: 'Haftalik Plan', href: '/dashboard/my-plan', icon: '📆' },
     { label: 'Egzersizler', href: '/dashboard/exercises', icon: '🏋️' },
     { label: 'Programlarim', href: '/dashboard/programs', icon: '📋' },
     { label: 'Gelisimim', href: '/dashboard/progress', icon: '📈' },
     { label: 'Grafikler', href: '/dashboard/analytics', icon: '📊' },
     { label: 'Basarimlar', href: '/dashboard/achievements', icon: '🏆' },
+    { label: 'Bildirimler', href: '/dashboard/notifications/inbox', icon: '🔔' },
   ],
   coach: [
     { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
@@ -32,6 +34,7 @@ const navItems: Record<string, NavItem[]> = {
     { label: 'Seanslar', href: '/dashboard/sessions', icon: '📅' },
     { label: 'Grafikler', href: '/dashboard/analytics', icon: '📊' },
     { label: 'Program Ata', href: '/dashboard/assignments', icon: '📋' },
+    { label: 'Bildirimler', href: '/dashboard/notifications/inbox', icon: '🔔' },
   ],
   club_admin: [
     { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
@@ -44,6 +47,7 @@ const navItems: Record<string, NavItem[]> = {
     { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
     { label: 'Gelisim', href: '/dashboard/progress', icon: '📈' },
     { label: 'Odemeler', href: '/dashboard/payments', icon: '💰' },
+    { label: 'Bildirimler', href: '/dashboard/notifications/inbox', icon: '🔔' },
   ],
   super_admin: [
     { label: 'Dashboard', href: '/dashboard', icon: '🏠' },

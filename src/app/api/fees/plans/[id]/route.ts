@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin } from '@/lib/auth'
 import type { ApiResponse, FeePlan } from '@/lib/types'
 
@@ -53,7 +53,7 @@ export async function GET(
       )
     }
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Fetch the fee plan
     const { data: plan, error } = await supabase
@@ -137,7 +137,7 @@ export async function PATCH(
       )
     }
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Fetch the existing fee plan
     const { data: existingPlan, error: fetchError } = await supabase
@@ -283,7 +283,7 @@ export async function DELETE(
       )
     }
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Fetch the existing fee plan
     const { data: existingPlan, error: fetchError } = await supabase

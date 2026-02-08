@@ -11,6 +11,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 })
+    console.error('POST /api/notifications/[id]/read error:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ success: false, data: null, error: 'Unauthorized' }, { status: 401 })
+    }
+    return NextResponse.json({ success: false, data: null, error: 'Internal server error' }, { status: 500 })
   }
 }

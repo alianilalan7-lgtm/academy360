@@ -109,13 +109,17 @@ function AttendanceChart({ role }: { role: string }) {
     load()
   }, [currentOrgId, isAthlete])
 
+  const [attendanceError, setAttendanceError] = useState('')
+
   // Load attendance for selected athlete
   useEffect(() => {
     if (!selectedAthlete || !sessions.length) return
 
     async function loadAttendance() {
+      setAttendanceError('')
       const records: any[] = []
-      for (const session of sessions.slice(0, 12)) {
+      let errorCount = 0
+      for (const session of sessions.slice(0, 10)) {
         try {
           const res = await fetch(`/api/sessions/${session.id}`)
           const data = await res.json()
@@ -129,8 +133,11 @@ function AttendanceChart({ role }: { role: string }) {
             })
           }
         } catch {
-          // skip
+          errorCount++
         }
+      }
+      if (errorCount > 0) {
+        setAttendanceError(`${errorCount} seans verisi yuklenemedi.`)
       }
       setAttendance(records.reverse())
     }
@@ -178,6 +185,12 @@ function AttendanceChart({ role }: { role: string }) {
               </option>
             ))}
           </select>
+        </div>
+      )}
+
+      {attendanceError && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-700">
+          {attendanceError}
         </div>
       )}
 
@@ -248,8 +261,9 @@ function PerformanceChart({ role }: { role: string }) {
         const metRes = await fetch('/api/metrics')
         const metData = await metRes.json()
         if (metData.success) {
-          setMetrics(metData.data || [])
-          if (metData.data?.length) setSelectedMetric(metData.data[0].id)
+          const metricsList = Array.isArray(metData.data) ? metData.data : (metData.data?.metrics || [])
+          setMetrics(metricsList)
+          if (metricsList.length) setSelectedMetric(metricsList[0].id)
         }
 
         if (isAthlete) {

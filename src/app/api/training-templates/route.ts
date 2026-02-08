@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import type { ApiResponse, PaginatedResponse, TrainingTemplate } from '@/lib/types'
 
@@ -25,7 +25,7 @@ const templateCreateSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     const { searchParams } = new URL(request.url)
     const queryParams = Object.fromEntries(searchParams.entries())
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ data: null, error: 'Yetkiniz yok', success: false }, { status: 403 })
     }
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const body = await request.json()
 
     const validationResult = templateCreateSchema.safeParse(body)

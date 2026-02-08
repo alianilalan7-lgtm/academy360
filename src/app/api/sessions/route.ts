@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -47,7 +47,7 @@ const queryParamsSchema = z.object({
 export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse<Session[] | SessionWithAttendance[]> & { total?: number; page?: number; pageSize?: number; totalPages?: number }>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { searchParams } = new URL(request.url)
 
     // Parse and validate query parameters
@@ -257,7 +257,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
 export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse<Session>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Verify user has appropriate role to create sessions
     if (!isAdmin(user) && !isCoach(user)) {

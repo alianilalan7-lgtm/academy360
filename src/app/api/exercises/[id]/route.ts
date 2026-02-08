@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   try {
     await requireAuth()
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     const { data: exercise, error } = await (supabase as any)
       .from('exercises')
@@ -42,7 +42,7 @@ export async function PUT(
     }
 
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const body = await request.json()
 
     const { data: exercise, error } = await (supabase as any)
@@ -78,7 +78,7 @@ export async function DELETE(
     }
 
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     const { error } = await (supabase as any)
       .from('exercises')

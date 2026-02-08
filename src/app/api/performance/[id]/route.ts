@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { getAuthUser, isAdmin, isCoach } from '@/lib/auth'
 
 interface RouteParams {
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     const { data, error } = await supabase
       .from('performance_records')
@@ -179,7 +179,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const body = await request.json()
     const { value, recordedAt, notes, isVerified, sessionId } = body
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Fetch existing record
     const { data: existingRecord, error: fetchError } = await supabase
@@ -338,7 +338,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Fetch existing record to check permissions
     const { data: existingRecord, error: fetchError } = await supabase

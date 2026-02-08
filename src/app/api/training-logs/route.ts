@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach, isAthlete } from '@/lib/auth'
 import type { ApiResponse, PaginatedResponse, TrainingLog, CompletionStatus } from '@/lib/types'
 import type { Json } from '@/lib/types/database'
@@ -68,7 +68,7 @@ function calculateXp(completionStatus: CompletionStatus): number {
  * Update athlete's total XP and last activity date
  */
 async function updateAthleteXp(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
   athleteId: string,
   xpEarned: number
 ): Promise<void> {
@@ -105,7 +105,7 @@ async function updateAthleteXp(
  * Update assignment progress based on training logs
  */
 async function updateAssignmentProgress(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
   assignedProgramId: string
 ): Promise<void> {
   // Count training logs for this assignment
@@ -154,7 +154,7 @@ async function updateAssignmentProgress(
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Parse query parameters
     const { searchParams } = new URL(request.url)
@@ -325,7 +325,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const body = await request.json()
 
     // Validate request body

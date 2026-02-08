@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const tier = searchParams.get('tier') || ''
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Build query
     let query = supabase

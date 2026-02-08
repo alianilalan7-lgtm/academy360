@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -60,7 +60,7 @@ export async function GET(
 ): Promise<NextResponse<ApiResponse<AttendanceWithAthlete[]> & { total?: number; page?: number; pageSize?: number; totalPages?: number }>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id: sessionId } = await params
 
     // Validate UUID format
@@ -192,7 +192,7 @@ export async function POST(
 ): Promise<NextResponse<ApiResponse<{ created: number; updated: number; records: AttendanceWithAthlete[] }>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id: sessionId } = await params
 
     // Verify user has appropriate role to record attendance
@@ -427,7 +427,7 @@ export async function POST(
 async function checkAttendanceAccess(
   user: Awaited<ReturnType<typeof requireAuth>>,
   session: { organization_id: string; group_id: string | null },
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createServiceClient>>
 ): Promise<boolean> {
   // Admins and coaches in the same org can access all attendance
   const isOrgStaff = user.memberships.some(

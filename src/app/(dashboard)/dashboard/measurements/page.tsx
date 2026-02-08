@@ -260,7 +260,7 @@ export default function MeasurementsPage() {
             <select
               value={selectedAthlete}
               onChange={e => setSelectedAthlete(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               required
             >
               <option value="">Sporcu seçin...</option>
@@ -277,7 +277,7 @@ export default function MeasurementsPage() {
             <select
               value={selectedMetric}
               onChange={e => setSelectedMetric(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               required
             >
               <option value="">Metrik seçin...</option>
@@ -301,7 +301,7 @@ export default function MeasurementsPage() {
               value={value}
               onChange={e => setValue(e.target.value)}
               placeholder="Ölçüm değeri"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               required
             />
           </div>
@@ -313,7 +313,7 @@ export default function MeasurementsPage() {
               onChange={e => setNotes(e.target.value)}
               rows={3}
               placeholder="Ek notlar..."
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             />
           </div>
 
@@ -338,7 +338,7 @@ export default function MeasurementsPage() {
                 <select
                   value={filterAthlete}
                   onChange={e => setFilterAthlete(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 >
                   <option value="">Sporcu seçin...</option>
                   {athletes.map((a) => (
@@ -353,7 +353,7 @@ export default function MeasurementsPage() {
                 <select
                   value={filterMetric}
                   onChange={e => setFilterMetric(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 >
                   <option value="">Tüm metrikler</option>
                   {Object.entries(metricsByCategory).map(([category, categoryMetrics]) => (

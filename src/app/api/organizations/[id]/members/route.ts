@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -7,7 +7,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const user = await requireAuth()
     const { id: orgId } = await params
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { searchParams } = new URL(request.url)
 
     const role = searchParams.get('role')
@@ -52,7 +52,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       totalPages: Math.ceil((count || 0) / pageSize),
     })
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 })
+    console.error('GET /api/organizations/[id]/members error:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ success: false, data: null, error: 'Unauthorized' }, { status: 401 })
+    }
+    return NextResponse.json({ success: false, data: null, error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -72,7 +76,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { id: orgId } = await params
     const body = await request.json()
     const { email, role, fullName } = inviteSchema.parse(body)
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Check if user already exists
     const { data: existingUser } = await supabase
@@ -120,9 +124,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       message: 'Invite stored. User will be added when they register.',
     }, { status: 201 })
   } catch (error) {
+    console.error('POST /api/organizations/[id]/members error:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ success: false, data: null, error: 'Unauthorized' }, { status: 401 })
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json({ success: false, error: 'Validation error', details: error.issues }, { status: 400 })
     }
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 })
+    return NextResponse.json({ success: false, data: null, error: 'Internal server error' }, { status: 500 })
   }
 }

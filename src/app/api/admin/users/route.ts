@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get('role') || ''
     const organizationId = searchParams.get('organizationId') || ''
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Build query for users with their memberships
     let query = supabase

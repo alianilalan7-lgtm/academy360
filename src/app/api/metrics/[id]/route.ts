@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { getAuthUser, isAdmin } from '@/lib/auth'
 
 interface RouteParams {
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     const { data: metric, error } = await supabase
       .from('metric_types')
@@ -167,7 +167,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params
     const body = await request.json()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Fetch existing metric
     const { data: existingMetric, error: fetchError } = await supabase
@@ -296,7 +296,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Fetch existing metric
     const { data: existingMetric, error: fetchError } = await supabase

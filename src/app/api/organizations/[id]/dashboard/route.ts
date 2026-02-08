@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const { id: orgId } = await params
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Parallel queries
     const [
@@ -55,6 +55,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
     })
   } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 })
+    console.error('GET /api/organizations/[id]/dashboard error:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ success: false, data: null, error: 'Unauthorized' }, { status: 401 })
+    }
+    return NextResponse.json({ success: false, data: null, error: 'Internal server error' }, { status: 500 })
   }
 }

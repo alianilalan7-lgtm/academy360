@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { getAuthUser } from '@/lib/auth'
 
 interface RouteParams {
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const { athleteId } = await params
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { searchParams } = new URL(request.url)
 
     // Parse query parameters

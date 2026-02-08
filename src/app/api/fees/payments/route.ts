@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isParent } from '@/lib/auth'
 import type { ApiResponse, PaginatedResponse, FeePayment } from '@/lib/types'
 
@@ -72,7 +72,7 @@ const feePaymentQuerySchema = z.object({
 export async function GET(request: NextRequest): Promise<NextResponse<PaginatedResponse<FeePaymentWithRelations> | ApiResponse<null>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { searchParams } = new URL(request.url)
     const queryParams = Object.fromEntries(searchParams.entries())
 
@@ -311,7 +311,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       )
     }
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const body = await request.json()
 
     // Validate request body

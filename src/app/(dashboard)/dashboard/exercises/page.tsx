@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRole } from '@/contexts/role-context'
 import type { Exercise, ExerciseCategory, ExerciseDifficulty } from '@/lib/types'
 
@@ -43,8 +44,46 @@ export default function ExercisesPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<ExerciseDifficulty | 'all'>('all')
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const [completingId, setCompletingId] = useState<string | null>(null)
+  const [todayPlanType, setTodayPlanType] = useState<string | null>(null)
+  const [todayPlanTitle, setTodayPlanTitle] = useState<string | null>(null)
 
   const isAthlete = activeRole === 'athlete'
+
+  // Load today's plan for athletes
+  useEffect(() => {
+    if (!isAthlete) return
+    async function loadTodayPlan() {
+      try {
+        const groupsRes = await fetch('/api/my-groups')
+        const groupsData = await groupsRes.json()
+        if (!groupsData.success || !groupsData.data?.length) return
+
+        const groupId = groupsData.data[0].id
+        const now = new Date()
+        const day = now.getDay()
+        const diff = now.getDate() - day + (day === 0 ? -6 : 1)
+        const monday = new Date(now)
+        monday.setDate(diff)
+        const weekStart = monday.toISOString().split('T')[0]
+
+        const planRes = await fetch(`/api/weekly-plans?group_id=${groupId}&week_start=${weekStart}`)
+        const planData = await planRes.json()
+        if (planData.success && planData.data?.length > 0) {
+          const plan = planData.data[0]
+          const dayKeys = ['pazar', 'pazartesi', 'sali', 'carsamba', 'persembe', 'cuma', 'cumartesi']
+          const todayKey = dayKeys[now.getDay()]
+          const todayData = plan.plan_data?.[todayKey]
+          if (todayData?.type) {
+            setTodayPlanType(todayData.type)
+            setTodayPlanTitle(todayData.title || null)
+          }
+        }
+      } catch {
+        // handle silently
+      }
+    }
+    loadTodayPlan()
+  }, [isAthlete])
 
   useEffect(() => {
     async function load() {
@@ -100,8 +139,33 @@ export default function ExercisesPage() {
   const totalExercises = exercises.length
   const completionPercent = totalExercises > 0 ? Math.round((completionCount / totalExercises) * 100) : 0
 
+  const SESSION_TYPE_LABELS: Record<string, string> = {
+    technical: 'Teknik', tactical: 'Taktik', physical: 'Fiziksel',
+    game_based: 'Oyun Temelli', match: 'Mac', rest: 'Dinlenme',
+  }
+
   return (
     <div className="space-y-6">
+      {/* Today's Plan Banner */}
+      {isAthlete && todayPlanType && todayPlanType !== 'rest' && (
+        <Link href="/dashboard/my-plan" className="block">
+          <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl p-4 text-white hover:from-emerald-600 hover:to-emerald-700 transition-all">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚽</span>
+                <div>
+                  <div className="text-emerald-100 text-xs font-medium">Bugunun Antrenman Plani</div>
+                  <div className="font-bold">
+                    {todayPlanTitle || SESSION_TYPE_LABELS[todayPlanType] || 'Antrenman'}
+                  </div>
+                </div>
+              </div>
+              <span className="text-emerald-200 text-sm">Plani Gor →</span>
+            </div>
+          </div>
+        </Link>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

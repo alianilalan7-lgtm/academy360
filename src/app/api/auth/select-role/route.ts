@@ -139,9 +139,13 @@ export async function POST(request: NextRequest) {
       data: { role, organizationId },
     })
   } catch (error) {
+    console.error('POST /api/auth/select-role error:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ success: false, data: null, error: 'Unauthorized' }, { status: 401 })
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json({ success: false, error: 'Validation error', details: error.issues }, { status: 400 })
     }
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 })
+    return NextResponse.json({ success: false, data: null, error: 'Internal server error' }, { status: 500 })
   }
 }

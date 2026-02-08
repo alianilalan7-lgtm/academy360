@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -50,7 +50,7 @@ export async function GET(
 ): Promise<NextResponse<ApiResponse<AttendanceWithAthlete>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id: sessionId, athleteId } = await params
 
     // Validate UUID formats
@@ -154,7 +154,7 @@ export async function PATCH(
 ): Promise<NextResponse<ApiResponse<AttendanceWithAthlete>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id: sessionId, athleteId } = await params
 
     // Verify user has appropriate role to update attendance
@@ -360,7 +360,7 @@ export async function DELETE(
 ): Promise<NextResponse<ApiResponse<{ deleted: boolean }>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id: sessionId, athleteId } = await params
 
     // Only admins can delete attendance records
@@ -476,7 +476,7 @@ async function checkAttendanceAccess(
   user: Awaited<ReturnType<typeof requireAuth>>,
   session: { organization_id: string; group_id: string | null },
   athleteId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createServiceClient>>
 ): Promise<boolean> {
   // Admins and coaches in the same org can access all attendance
   const isOrgStaff = user.memberships.some(

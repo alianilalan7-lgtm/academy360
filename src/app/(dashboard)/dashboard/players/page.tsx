@@ -71,7 +71,7 @@ export default function PlayersPage() {
         placeholder="Oyuncu ara..."
         value={search}
         onChange={e => setSearch(e.target.value)}
-        className="w-full max-w-sm px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+        className="w-full max-w-sm px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
       />
 
       {loading ? (

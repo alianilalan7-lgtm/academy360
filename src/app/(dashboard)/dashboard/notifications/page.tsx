@@ -105,7 +105,7 @@ export default function NotificationsPage() {
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Bildirim basligi"
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             required
           />
         </div>
@@ -117,7 +117,7 @@ export default function NotificationsPage() {
             onChange={e => setBody(e.target.value)}
             rows={4}
             placeholder="Bildirim icerigi..."
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             required
           />
         </div>
@@ -127,7 +127,7 @@ export default function NotificationsPage() {
           <select
             value={priority}
             onChange={e => setPriority(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           >
             <option value="low">Dusuk</option>
             <option value="normal">Normal</option>

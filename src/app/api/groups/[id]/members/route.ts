@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -54,7 +54,7 @@ export async function GET(
 ): Promise<NextResponse<ApiResponse<GroupMemberWithProfile[]> & { total?: number; page?: number; pageSize?: number; totalPages?: number }>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id: groupId } = await params
 
     // Validate UUID format
@@ -216,7 +216,7 @@ export async function POST(
 ): Promise<NextResponse<ApiResponse<{ added: number; skipped: number; errors: string[] }>>> {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id: groupId } = await params
 
     // Validate UUID format
@@ -422,7 +422,7 @@ export async function POST(
 async function checkMemberListAccess(
   user: Awaited<ReturnType<typeof requireAuth>>,
   group: { organization_id: string; id: string },
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createServiceClient>>
 ): Promise<boolean> {
   // Admins and coaches in the same org can access
   const isOrgStaff = user.memberships.some(
@@ -453,7 +453,7 @@ async function checkMemberListAccess(
 async function checkMemberManageAccess(
   user: Awaited<ReturnType<typeof requireAuth>>,
   group: { organization_id: string; id: string },
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createServiceClient>>
 ): Promise<boolean> {
   // Admins can always manage members
   if (isAdmin(user)) {
