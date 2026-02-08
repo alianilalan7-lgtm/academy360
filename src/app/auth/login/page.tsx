@@ -28,6 +28,12 @@ export default function LoginPage() {
     if (params.get('registered') === 'true') {
       setJustRegistered(true)
     }
+
+    // Store role hint from URL for post-login redirect
+    const roleParam = params.get('role')
+    if (roleParam && ['athlete', 'coach', 'club_admin'].includes(roleParam)) {
+      localStorage.setItem('preferred_role', roleParam)
+    }
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -58,7 +64,15 @@ export default function LoginPage() {
       const data = await res.json()
 
       if (data.success) {
-        // Redirect to unified dashboard - role is managed by RoleContext
+        // Check if there's a preferred role to switch to
+        const preferredRole = localStorage.getItem('preferred_role')
+        if (preferredRole) {
+          // Store in cookie for RoleContext to pick up
+          document.cookie = `academy360_active_role=${preferredRole}; path=/; max-age=${365 * 24 * 60 * 60}`
+          localStorage.removeItem('preferred_role') // Clean up
+        }
+
+        // Redirect to unified dashboard
         router.push('/dashboard')
       } else {
         setError(data.error || 'Giris yapilamadi')

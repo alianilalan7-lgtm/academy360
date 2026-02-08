@@ -62,18 +62,83 @@ export default function Home() {
               edin, antrenman programlari olusturun ve aidat yonetimini
               kolaylastirin.
             </p>
-            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <div className="mt-10 grid gap-4 sm:grid-cols-3 sm:gap-6">
+              {/* Athlete Login */}
               <Link
-                href="/auth/login"
-                className="w-full rounded-xl bg-emerald-500 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-600 hover:shadow-xl hover:shadow-emerald-500/30 sm:w-auto"
+                href="/auth/login?role=athlete"
+                className="group relative flex flex-col items-center justify-center rounded-2xl border border-blue-100 bg-white p-6 shadow-lg shadow-blue-500/5 transition-all hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-500/10"
               >
-                Giris Yap
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-500 transition-colors group-hover:bg-blue-500 group-hover:text-white">
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3-3 3"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Sporcu Girişi</h3>
+                <p className="mt-2 text-center text-sm text-gray-500">
+                  Performans takibi ve eğitim programları
+                </p>
               </Link>
+
+              {/* Coach Login */}
               <Link
-                href="/auth/register"
-                className="w-full rounded-xl border-2 border-gray-200 bg-white px-8 py-3.5 text-base font-semibold text-gray-700 transition-all hover:border-emerald-200 hover:text-emerald-600 sm:w-auto"
+                href="/auth/login?role=coach"
+                className="group relative flex flex-col items-center justify-center rounded-2xl border border-orange-100 bg-white p-6 shadow-lg shadow-orange-500/5 transition-all hover:-translate-y-1 hover:border-orange-200 hover:shadow-xl hover:shadow-orange-500/10"
               >
-                Kayit Ol
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-orange-500 transition-colors group-hover:bg-orange-500 group-hover:text-white">
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 0 1-1.44-4.282m3.102.069a18.03 18.03 0 0 1-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 0 1 8.835 2.535M10.34 6.66a23.847 23.847 0 0 0 8.835-2.535m0 0A23.74 23.74 0 0 0 18.795 3m.38 1.125a23.91 23.91 0 0 1 1.014 5.795 23.944 23.944 0 0 1-1.014 5.795m-10.34 0a23.82 23.82 0 0 1-1.54-4.66m1.54 4.66H10.5"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Antrenör Girişi</h3>
+                <p className="mt-2 text-center text-sm text-gray-500">
+                  Antrenman planlaması ve takım yönetimi
+                </p>
+              </Link>
+
+              {/* Manager Login */}
+              <Link
+                href="/auth/login?role=club_admin"
+                className="group relative flex flex-col items-center justify-center rounded-2xl border border-emerald-100 bg-white p-6 shadow-lg shadow-emerald-500/5 transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-500/10"
+              >
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500 transition-colors group-hover:bg-emerald-500 group-hover:text-white">
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Kulüp Yöneticisi</h3>
+                <p className="mt-2 text-center text-sm text-gray-500">
+                  Akademi yönetimi ve idari işlemler
+                </p>
               </Link>
             </div>
           </div>
