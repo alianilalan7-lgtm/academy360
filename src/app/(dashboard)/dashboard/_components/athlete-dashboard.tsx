@@ -48,19 +48,27 @@ function calculateLevelProgress(totalXp: number): { level: number; progress: num
 export function AthleteDashboardContent() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   useEffect(() => {
     async function load() {
       try {
+        setError('')
         const meRes = await fetch('/api/auth/me')
         const me = await meRes.json()
-        if (!me.success) return
+        if (!me.success) {
+          setError(me.error || 'Kullanici bilgisi yuklenemedi')
+          return
+        }
 
         const athleteProfiles = me.data.athleteProfiles || []
         const athleteProfile = athleteProfiles[0]
-        if (!athleteProfile) return
+        if (!athleteProfile) {
+          setError('Sporcu profili bulunamadi')
+          return
+        }
 
         // Fetch stats and group info in parallel
         const [statsRes, groupsRes] = await Promise.all([
@@ -69,6 +77,10 @@ export function AthleteDashboardContent() {
         ])
         const stats = await statsRes.json()
         const groupsData = await groupsRes.json()
+        if (!stats.success) {
+          setError(stats.error || 'Istatistikler yuklenemedi')
+          return
+        }
 
         let todayPlan = null
         let groupName = ''
@@ -89,6 +101,7 @@ export function AthleteDashboardContent() {
 
         setData({ profile: athleteProfile, stats: stats.data, todayPlan, groupName, user: me.data.user })
       } catch {
+        setError('Veriler yuklenemedi')
       } finally {
         setLoading(false)
       }
@@ -106,6 +119,25 @@ export function AthleteDashboardContent() {
           ))}
         </div>
         <div className="h-24 bg-gray-200 rounded-xl animate-pulse" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">Sporcu Paneli</h1>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+          {error}
+        </div>
+      </div>
+    )
+  }
+
+  if (!data) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-6 text-gray-600">
+        Sporcu panel verisi bulunamadi.
       </div>
     )
   }

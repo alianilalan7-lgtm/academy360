@@ -8,6 +8,7 @@ export default function AchievementsPage() {
   const { activeRole, isLoading: roleLoading } = useRole()
   const [achievements, setAchievements] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   const canView = activeRole === 'athlete'
 
@@ -20,10 +21,12 @@ export default function AchievementsPage() {
 
     async function load() {
       try {
+        setError('')
         const meRes = await fetch('/api/auth/me')
         const me = await meRes.json()
         console.log('Auth me response:', me)
         if (!me.success) {
+          setError(me.error || 'Kullanici bilgisi yuklenemedi')
           setLoading(false)
           return
         }
@@ -32,6 +35,7 @@ export default function AchievementsPage() {
         const athleteProfile = athleteProfiles[0]
         console.log('Athlete profile:', athleteProfile)
         if (!athleteProfile) {
+          setError('Sporcu profili bulunamadi')
           setLoading(false)
           return
         }
@@ -39,9 +43,14 @@ export default function AchievementsPage() {
         const res = await fetch(`/api/athletes/${athleteProfile.id}/achievements`)
         const data = await res.json()
         console.log('Achievements response:', data)
-        if (data.success) setAchievements(data.data || [])
+        if (data.success) {
+          setAchievements(data.data || [])
+        } else {
+          setError(data.error || 'Basarimlar yuklenemedi')
+        }
       } catch (error) {
         console.error('Error loading achievements:', error)
+        setError('Basarimlar yuklenemedi')
       } finally {
         setLoading(false)
       }
@@ -74,7 +83,11 @@ export default function AchievementsPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Basarimlarim</h1>
 
-      {achievements.length === 0 ? (
+      {error ? (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+          {error}
+        </div>
+      ) : achievements.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
           <div className="text-4xl mb-3">🏆</div>
           <p className="text-gray-500">Henuz basarim kazanilmadi.</p>

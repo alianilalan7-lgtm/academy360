@@ -40,6 +40,7 @@ export default function ExercisesPage() {
   const { activeRole, isLoading: roleLoading } = useRole()
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<ExerciseCategory | 'all'>('all')
   const [selectedDifficulty, setSelectedDifficulty] = useState<ExerciseDifficulty | 'all'>('all')
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
@@ -94,6 +95,8 @@ export default function ExercisesPage() {
 
   useEffect(() => {
     async function load() {
+      setLoading(true)
+      setError('')
       try {
         let url = '/api/exercises?pageSize=100'
         if (selectedCategory !== 'all') url += `&category=${selectedCategory}`
@@ -101,9 +104,15 @@ export default function ExercisesPage() {
 
         const res = await fetch(url)
         const data = await res.json()
-        if (data.success) setExercises(data.data || [])
+        if (data.success) {
+          setExercises(data.data || [])
+        } else {
+          setExercises([])
+          setError(data.error || 'Egzersizler yuklenemedi')
+        }
       } catch {
-        // handle silently
+        setExercises([])
+        setError('Egzersizler yuklenemedi')
       } finally {
         setLoading(false)
       }
@@ -139,9 +148,12 @@ export default function ExercisesPage() {
       const data = await res.json()
       if (data.success) {
         setCompletedIds(prev => new Set(prev).add(exerciseId))
+        setError('')
+      } else {
+        setError(data.error || 'Egzersiz tamamlanamadi')
       }
     } catch {
-      // handle silently
+      setError('Egzersiz tamamlanamadi')
     } finally {
       setCompletingId(null)
     }
@@ -219,6 +231,12 @@ export default function ExercisesPage() {
           </div>
         )}
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+          {error}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">

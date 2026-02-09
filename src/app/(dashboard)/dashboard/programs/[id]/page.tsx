@@ -119,6 +119,7 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
   const [assignment, setAssignment] = useState<AssignmentDetail | null>(null)
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const [completingId, setCompletingId] = useState<string | null>(null)
@@ -126,6 +127,7 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     async function load() {
       try {
+        setError('')
         let loadedProgram: ProgramDetail | null = null
 
         // Try to load as assignment first (athlete), then as program (coach)
@@ -136,6 +138,8 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
             setAssignment(assignData.data)
             loadedProgram = assignData.data.program
             setProgram(loadedProgram)
+          } else {
+            setError(assignData.error || 'Program bilgisi yuklenemedi')
           }
         } else {
           const progRes = await fetch(`/api/programs/${id}`)
@@ -143,6 +147,8 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
           if (progData.success) {
             loadedProgram = progData.data
             setProgram(loadedProgram)
+          } else {
+            setError(progData.error || 'Program bilgisi yuklenemedi')
           }
         }
 
@@ -151,9 +157,11 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
         const exData = await exRes.json()
         if (exData.success) {
           setExercises(filterExercisesForProgram(exData.data || [], loadedProgram))
+        } else {
+          setError(exData.error || 'Egzersizler yuklenemedi')
         }
       } catch {
-        // handle silently
+        setError('Program detaylari yuklenemedi')
       } finally {
         setLoading(false)
       }
@@ -172,9 +180,12 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
       const data = await res.json()
       if (data.success) {
         setCompletedIds(prev => new Set(prev).add(exerciseId))
+        setError('')
+      } else {
+        setError(data.error || 'Egzersiz tamamlanamadi')
       }
     } catch {
-      // handle silently
+      setError('Egzersiz tamamlanamadi')
     } finally {
       setCompletingId(null)
     }
@@ -211,6 +222,12 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
       <Link href="/dashboard/programs" className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1">
         ← Programlara don
       </Link>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+          {error}
+        </div>
+      )}
 
       {/* Program header */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">

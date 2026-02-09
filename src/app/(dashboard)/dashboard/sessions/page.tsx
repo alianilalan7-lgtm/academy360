@@ -19,6 +19,11 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'Iptal Edildi',
 }
 
+function getPrimaryOrgId(meData: any): string | null {
+  const firstMembership = meData?.memberships?.[0]
+  return firstMembership?.organization_id || firstMembership?.organization?.id || null
+}
+
 export default function SessionsPage() {
   const { activeRole, isLoading: roleLoading } = useRole()
 
@@ -69,7 +74,7 @@ function CoachSessionsContent() {
         if (!oid) {
           const meRes = await fetch('/api/auth/me')
           const me = await meRes.json()
-          oid = me.data?.memberships?.[0]?.organization_id
+          oid = getPrimaryOrgId(me.data)
         }
         if (!oid) return
         setOrgId(oid)
@@ -315,21 +320,34 @@ function CoachSessionsContent() {
 function AthleteSessionsContent() {
   const [sessions, setSessions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     async function load() {
       try {
+        setError('')
         const meRes = await fetch('/api/auth/me')
         const me = await meRes.json()
-        if (!me.success) return
+        if (!me.success) {
+          setError(me.error || 'Oturum bilgisi alinamadi')
+          return
+        }
 
-        const orgId = me.data?.memberships?.[0]?.organization_id
-        if (!orgId) return
+        const orgId = getPrimaryOrgId(me.data)
+        if (!orgId) {
+          setError('Organizasyon bilgisi bulunamadi')
+          return
+        }
 
         const res = await fetch(`/api/sessions?organizationId=${orgId}&status=scheduled&pageSize=20`)
         const data = await res.json()
-        if (data.success) setSessions(data.data || [])
+        if (data.success) {
+          setSessions(data.data || [])
+        } else {
+          setError(data.error || 'Seanslar yuklenemedi')
+        }
       } catch {
+        setError('Seanslar yuklenemedi')
       } finally {
         setLoading(false)
       }
@@ -358,7 +376,11 @@ function AthleteSessionsContent() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Yaklasan Seanslarim</h1>
 
-      {sessions.length === 0 ? (
+      {error ? (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+          {error}
+        </div>
+      ) : sessions.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
           <div className="text-4xl mb-3">📅</div>
           <p className="text-gray-500">Yaklasan seans bulunamadi.</p>

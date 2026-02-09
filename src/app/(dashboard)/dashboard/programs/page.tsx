@@ -30,22 +30,35 @@ export default function ProgramsPage() {
 function AthleteProgramsContent() {
   const [programs, setPrograms] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     async function load() {
       try {
+        setError('')
         const meRes = await fetch('/api/auth/me')
         const me = await meRes.json()
-        if (!me.success) return
+        if (!me.success) {
+          setError(me.error || 'Kullanici bilgisi yuklenemedi')
+          return
+        }
 
         const athleteProfiles = me.data.athleteProfiles || []
         const athleteProfile = athleteProfiles[0]
-        if (!athleteProfile) return
+        if (!athleteProfile) {
+          setError('Sporcu profili bulunamadi')
+          return
+        }
 
         const res = await fetch(`/api/assignments?athlete_id=${athleteProfile.id}`)
         const data = await res.json()
-        if (data.success) setPrograms(data.data || [])
+        if (data.success) {
+          setPrograms(data.data || [])
+        } else {
+          setError(data.error || 'Programlar yuklenemedi')
+        }
       } catch {
+        setError('Programlar yuklenemedi')
       } finally {
         setLoading(false)
       }
@@ -86,7 +99,11 @@ function AthleteProgramsContent() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Programlarim</h1>
 
-      {programs.length === 0 ? (
+      {error ? (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+          {error}
+        </div>
+      ) : programs.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
           <div className="text-4xl mb-3">📋</div>
           <p className="text-gray-500">Henuz atanmis program yok.</p>
