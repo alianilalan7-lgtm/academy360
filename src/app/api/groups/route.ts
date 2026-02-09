@@ -27,6 +27,10 @@ const queryParamsSchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
 })
 
+function optionalParam(value: string | null): string | undefined {
+  return value ?? undefined
+}
+
 interface GroupWithMemberCount extends Group {
   member_count: number
 }
@@ -53,10 +57,10 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
 
     // Parse and validate query parameters
     const queryResult = queryParamsSchema.safeParse({
-      organizationId: searchParams.get('organizationId'),
-      isActive: searchParams.get('isActive'),
-      ageGroup: searchParams.get('ageGroup'),
-      search: searchParams.get('search'),
+      organizationId: optionalParam(searchParams.get('organizationId')),
+      isActive: optionalParam(searchParams.get('isActive')),
+      ageGroup: optionalParam(searchParams.get('ageGroup')),
+      search: optionalParam(searchParams.get('search')),
       page: searchParams.get('page') ?? 1,
       pageSize: searchParams.get('pageSize') ?? 20,
       sortBy: searchParams.get('sortBy') ?? 'name',

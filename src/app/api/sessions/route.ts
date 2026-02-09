@@ -39,6 +39,10 @@ const queryParamsSchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
 })
 
+function optionalParam(value: string | null): string | undefined {
+  return value ?? undefined
+}
+
 /**
  * GET /api/sessions
  * List sessions with filtering, pagination, and optional attendance data
@@ -52,13 +56,13 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
 
     // Parse and validate query parameters
     const queryResult = queryParamsSchema.safeParse({
-      organizationId: searchParams.get('organizationId'),
-      groupId: searchParams.get('groupId'),
-      coachId: searchParams.get('coachId'),
-      sessionType: searchParams.get('sessionType'),
-      status: searchParams.get('status'),
-      startDate: searchParams.get('startDate'),
-      endDate: searchParams.get('endDate'),
+      organizationId: optionalParam(searchParams.get('organizationId')),
+      groupId: optionalParam(searchParams.get('groupId')),
+      coachId: optionalParam(searchParams.get('coachId')),
+      sessionType: optionalParam(searchParams.get('sessionType')),
+      status: optionalParam(searchParams.get('status')),
+      startDate: optionalParam(searchParams.get('startDate')),
+      endDate: optionalParam(searchParams.get('endDate')),
       includeAttendance: searchParams.get('includeAttendance') ?? 'false',
       page: searchParams.get('page') ?? 1,
       pageSize: searchParams.get('pageSize') ?? 20,

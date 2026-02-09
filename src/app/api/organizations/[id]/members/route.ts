@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .from('memberships')
       .select(`
         *,
-        user_profile:user_profiles(id, email, full_name, avatar_url, phone)
+        user_profile:user_profiles!memberships_user_id_fkey(id, email, full_name, avatar_url, phone)
       `, { count: 'exact' })
       .eq('organization_id', orgId)
 
