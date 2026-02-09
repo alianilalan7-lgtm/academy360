@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRole } from '@/contexts/role-context'
 import { AccessDenied } from '@/components/access-denied'
+import { Skeleton, CardSkeleton, ChartSkeleton } from '@/components/ui/skeleton'
 
 interface MetricHistory {
   metricType: {
@@ -165,15 +166,29 @@ function ProgressContent() {
     load()
   }, [])
 
+
+
+  // ... (existing imports, keep file structure)
+
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 bg-gray-200 rounded w-56 animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-28 bg-gray-200 rounded-xl animate-pulse" />
-          ))}
+        <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
         </div>
+
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg overflow-x-auto w-full md:w-auto">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-9 w-24" />)}
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => <CardSkeleton key={i} className="h-32" />)}
+        </div>
+
+        <ChartSkeleton className="h-[400px]" />
       </div>
     )
   }
@@ -229,11 +244,10 @@ function ProgressContent() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
-              activeTab === tab.key
-                ? 'bg-white text-emerald-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
+            className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${activeTab === tab.key
+              ? 'bg-white text-emerald-700 shadow-sm'
+              : 'text-gray-600 hover:text-gray-800'
+              }`}
           >
             {tab.label}
           </button>
@@ -366,9 +380,8 @@ function ProgressContent() {
                             />
                           </div>
                         </div>
-                        <span className={`text-sm font-bold w-8 text-right ${
-                          skill.score >= 7 ? 'text-emerald-600' : skill.score >= 5 ? 'text-blue-600' : 'text-red-500'
-                        }`}>
+                        <span className={`text-sm font-bold w-8 text-right ${skill.score >= 7 ? 'text-emerald-600' : skill.score >= 5 ? 'text-blue-600' : 'text-red-500'
+                          }`}>
                           {skill.score}
                         </span>
                       </div>
@@ -401,10 +414,9 @@ function ProgressContent() {
                 </div>
                 <div className="bg-white p-5 rounded-xl border border-gray-200">
                   <div className="text-sm text-gray-500">Ortalama Degisim</div>
-                  <div className={`text-3xl font-bold mt-1 ${
-                    metrics.reduce((sum, m) => sum + (m.statistics.totalChangePercent || 0), 0) / metrics.length >= 0
-                      ? 'text-emerald-600' : 'text-red-500'
-                  }`}>
+                  <div className={`text-3xl font-bold mt-1 ${metrics.reduce((sum, m) => sum + (m.statistics.totalChangePercent || 0), 0) / metrics.length >= 0
+                    ? 'text-emerald-600' : 'text-red-500'
+                    }`}>
                     {formatChangePercent(metrics.reduce((sum, m) => sum + (m.statistics.totalChangePercent || 0), 0) / metrics.length)}
                   </div>
                 </div>

@@ -196,7 +196,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       )
     }
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Parse and validate request body
     const body = await request.json()

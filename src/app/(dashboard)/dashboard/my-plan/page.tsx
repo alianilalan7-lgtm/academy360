@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRole } from '@/contexts/role-context'
 import { AccessDenied } from '@/components/access-denied'
-
+import { Skeleton, CardSkeleton } from '@/components/ui/skeleton'
 interface DayPlan {
   title: string
   type: string
@@ -137,11 +137,20 @@ function MyPlanContent() {
     )
   }
 
+
+
+  // ...
+
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="h-8 bg-gray-200 rounded w-64 animate-pulse" />
-        {[1, 2, 3].map(i => <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse" />)}
+        <Skeleton className="h-8 w-64" />
+        <div className="flex gap-3 mb-6">
+          <Skeleton className="h-10 w-10 rounded-lg" />
+          <Skeleton className="h-6 w-32 my-auto" />
+          <Skeleton className="h-10 w-10 rounded-lg" />
+        </div>
+        {[1, 2, 3].map(i => <CardSkeleton key={i} className="h-32" />)}
       </div>
     )
   }
@@ -199,11 +208,10 @@ function MyPlanContent() {
             return (
               <div
                 key={day.key}
-                className={`rounded-xl border p-4 transition-all ${
-                  isToday
-                    ? 'border-emerald-400 bg-emerald-50 ring-2 ring-emerald-200'
-                    : 'border-gray-200 bg-white'
-                }`}
+                className={`rounded-xl border p-4 transition-all ${isToday
+                  ? 'border-emerald-400 bg-emerald-50 ring-2 ring-emerald-200'
+                  : 'border-gray-200 bg-white'
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">

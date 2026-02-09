@@ -50,11 +50,11 @@ export async function GET(
     // Parse query parameters
     const { searchParams } = new URL(request.url)
     const queryResult = queryParamsSchema.safeParse({
-      category: searchParams.get('category'),
-      page: searchParams.get('page') ?? 1,
-      pageSize: searchParams.get('pageSize') ?? 20,
-      sortBy: searchParams.get('sortBy') ?? 'earned_at',
-      sortOrder: searchParams.get('sortOrder') ?? 'desc',
+      category: searchParams.get('category') || undefined,
+      page: searchParams.get('page') || undefined,
+      pageSize: searchParams.get('pageSize') || undefined,
+      sortBy: searchParams.get('sortBy') || undefined,
+      sortOrder: searchParams.get('sortOrder') || undefined,
     })
 
     if (!queryResult.success) {
@@ -222,8 +222,8 @@ async function checkAchievementsAccess(
   // Admins and coaches in the same org can access
   const isOrgStaff = user.memberships.some(
     m => m.organization_id === athlete.organization_id &&
-         m.status === 'active' &&
-         ['club_admin', 'super_admin', 'coach'].includes(m.role)
+      m.status === 'active' &&
+      ['club_admin', 'super_admin', 'coach'].includes(m.role)
   )
 
   if (isOrgStaff) return true

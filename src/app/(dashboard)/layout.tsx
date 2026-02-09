@@ -26,6 +26,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <DashboardShellWrapper
       userName={user.profile?.full_name || user.email}
+      userAvatar={user.profile?.avatar_url}
       memberships={user.memberships}
       organizations={organizations || []}
       defaultRole={user.currentRole || 'athlete'}

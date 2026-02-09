@@ -12,22 +12,36 @@ export default function AchievementsPage() {
   const canView = activeRole === 'athlete'
 
   useEffect(() => {
-    if (!canView || roleLoading) return
+    if (roleLoading) return
+    if (!canView) {
+      setLoading(false)
+      return
+    }
 
     async function load() {
       try {
         const meRes = await fetch('/api/auth/me')
         const me = await meRes.json()
-        if (!me.success) return
+        console.log('Auth me response:', me)
+        if (!me.success) {
+          setLoading(false)
+          return
+        }
 
         const athleteProfiles = me.data.athleteProfiles || []
         const athleteProfile = athleteProfiles[0]
-        if (!athleteProfile) return
+        console.log('Athlete profile:', athleteProfile)
+        if (!athleteProfile) {
+          setLoading(false)
+          return
+        }
 
         const res = await fetch(`/api/athletes/${athleteProfile.id}/achievements`)
         const data = await res.json()
+        console.log('Achievements response:', data)
         if (data.success) setAchievements(data.data || [])
-      } catch {
+      } catch (error) {
+        console.error('Error loading achievements:', error)
       } finally {
         setLoading(false)
       }

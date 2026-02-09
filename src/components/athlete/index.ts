@@ -1,0 +1,10 @@
+// Athlete Components Barrel Export
+export { StatsCard } from './stats-card'
+export { StreakIndicator } from './streak-indicator'
+export { ProgressRing } from './progress-ring'
+export { AchievementBadge } from './achievement-badge'
+export { ExerciseCard } from './exercise-card'
+export { VideoModal } from './video-modal'
+export { QuickAction } from './quick-action'
+export { Confetti } from './confetti'
+export { XpToast } from './xp-toast'

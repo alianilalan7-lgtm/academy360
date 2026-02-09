@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { StatsCard, StreakIndicator, QuickAction, AchievementBadge } from '@/components/athlete'
+import { ProfileSettingsDialog } from '@/components/profile/profile-settings-dialog'
 
 interface DashboardData {
   profile: any
   stats: any
   todayPlan: { title: string; type: string; duration: number; notes: string } | null
   groupName: string
+  user: any
 }
 
 const SESSION_TYPE_LABELS: Record<string, string> = {
@@ -15,7 +18,7 @@ const SESSION_TYPE_LABELS: Record<string, string> = {
   tactical: 'Taktik',
   physical: 'Fiziksel',
   game_based: 'Oyun Temelli',
-  match: 'Mac',
+  match: 'Maç',
   rest: 'Dinlenme',
 }
 
@@ -32,9 +35,21 @@ function getTodayKey(): string {
   return keys[new Date().getDay()]
 }
 
+// Calculate level progress (XP needed per level increases)
+function calculateLevelProgress(totalXp: number): { level: number; progress: number; xpToNext: number } {
+  const xpPerLevel = 100 // Base XP per level
+  const level = Math.floor(totalXp / xpPerLevel) + 1
+  const xpInCurrentLevel = totalXp % xpPerLevel
+  const progress = Math.round((xpInCurrentLevel / xpPerLevel) * 100)
+  const xpToNext = xpPerLevel - xpInCurrentLevel
+  return { level, progress, xpToNext }
+}
+
 export function AthleteDashboardContent() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -72,7 +87,7 @@ export function AthleteDashboardContent() {
           }
         }
 
-        setData({ profile: athleteProfile, stats: stats.data, todayPlan, groupName })
+        setData({ profile: athleteProfile, stats: stats.data, todayPlan, groupName, user: me.data.user })
       } catch {
       } finally {
         setLoading(false)
@@ -85,60 +100,113 @@ export function AthleteDashboardContent() {
     return (
       <div className="space-y-6">
         <div className="h-8 bg-gray-200 rounded w-48 animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
             <div key={i} className="h-32 bg-gray-200 rounded-xl animate-pulse" />
           ))}
         </div>
+        <div className="h-24 bg-gray-200 rounded-xl animate-pulse" />
       </div>
     )
   }
 
   const stats = data?.stats
+  const { level, progress, xpToNext } = calculateLevelProgress(stats?.totalXp || 0)
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Hoş Geldin! 👋</h1>
-        <p className="text-gray-500">Bugünkü antrenman planını kontrol et</p>
+      <ProfileSettingsDialog
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        currentUser={data?.user}
+      />
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900">Hoş Geldin! 👋</h1>
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Profil Ayarları"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+          </div>
+          <p className="text-gray-500">Bugünkü antrenman planını kontrol et</p>
+        </div>
+        <StreakIndicator days={stats?.streakDays || 0} />
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <QuickAction
+          label="Antrenman Başlat"
+          icon="⚽"
+          href="/dashboard/my-plan"
+          color="emerald"
+          description="Bugünün planı"
+        />
+        <QuickAction
+          label="Egzersiz Yap"
+          icon="🏋️"
+          href="/dashboard/exercises"
+          color="blue"
+          description="Kütüphaneye git"
+        />
+        <QuickAction
+          label="İlerleme Gör"
+          icon="📈"
+          href="/dashboard/progress"
+          color="purple"
+          description="Gelişimini takip et"
+        />
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-gray-200">
-          <div className="text-sm text-gray-500">Seviye</div>
-          <div className="text-3xl font-bold text-emerald-600 mt-1">{stats?.currentLevel || 1}</div>
-          <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-500 rounded-full" style={{ width: '60%' }} />
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-gray-200">
-          <div className="text-sm text-gray-500">Toplam XP</div>
-          <div className="text-3xl font-bold text-blue-600 mt-1">{stats?.totalXp || 0}</div>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-gray-200">
-          <div className="text-sm text-gray-500">Seri</div>
-          <div className="text-3xl font-bold text-orange-500 mt-1">{stats?.streakDays || 0} gün</div>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-gray-200">
-          <div className="text-sm text-gray-500">Tamamlanan</div>
-          <div className="text-3xl font-bold text-purple-600 mt-1">{stats?.completedPrograms || 0}</div>
-          <div className="text-xs text-gray-400">program</div>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatsCard
+          title="Seviye"
+          value={level}
+          icon="⭐"
+          color="emerald"
+          progress={progress}
+          subtitle={`${xpToNext} XP kaldı`}
+        />
+        <StatsCard
+          title="Toplam XP"
+          value={stats?.totalXp || 0}
+          icon="💎"
+          color="blue"
+        />
+        <StatsCard
+          title="Seri"
+          value={`${stats?.streakDays || 0} gün`}
+          icon="🔥"
+          color="orange"
+        />
+        <StatsCard
+          title="Tamamlanan"
+          value={stats?.completedPrograms || 0}
+          subtitle="program"
+          icon="🏆"
+          color="purple"
+        />
       </div>
 
       {/* Today's Plan Card */}
       {data?.todayPlan && data.todayPlan.type ? (
         <Link href="/dashboard/my-plan" className="block">
-          <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl p-5 text-white hover:from-emerald-600 hover:to-emerald-700 transition-all">
+          <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl p-5 text-white hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-emerald-100 text-sm font-medium">Bugunun Antrenman Plani</div>
+                <div className="text-emerald-100 text-sm font-medium">Bugünün Antrenman Planı</div>
                 <div className="text-xl font-bold mt-1">
-                  {data.todayPlan.type === 'rest' ? '😴 Dinlenme Gunu' : data.todayPlan.title || SESSION_TYPE_LABELS[data.todayPlan.type] || 'Antrenman'}
+                  {data.todayPlan.type === 'rest' ? '😴 Dinlenme Günü' : data.todayPlan.title || SESSION_TYPE_LABELS[data.todayPlan.type] || 'Antrenman'}
                 </div>
                 <div className="flex items-center gap-3 mt-2 text-emerald-100 text-sm">
                   {data.todayPlan.type !== 'rest' && (
@@ -150,26 +218,26 @@ export function AthleteDashboardContent() {
                   {data.groupName && <span>| {data.groupName}</span>}
                 </div>
               </div>
-              <div className="text-4xl opacity-80">
+              <div className="text-5xl opacity-80">
                 {data.todayPlan.type === 'rest' ? '😴' : '⚽'}
               </div>
             </div>
             {data.todayPlan.notes && data.todayPlan.type !== 'rest' && (
-              <p className="mt-3 text-sm text-emerald-100 bg-white/10 rounded-lg p-2">{data.todayPlan.notes}</p>
+              <p className="mt-3 text-sm text-emerald-100 bg-white/10 rounded-lg p-3">{data.todayPlan.notes}</p>
             )}
           </div>
         </Link>
       ) : (
         <Link href="/dashboard/my-plan" className="block">
-          <div className="bg-white rounded-xl border border-gray-200 p-5 hover:border-emerald-300 transition-colors">
+          <div className="bg-white rounded-xl border border-gray-200 p-5 hover:border-emerald-300 hover:shadow-md transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm text-gray-500">Bugunun Plani</div>
+                <div className="text-sm text-gray-500">Bugünün Planı</div>
                 <div className="text-gray-700 font-medium mt-1">
-                  {data?.groupName ? 'Bugun icin plan henuz yok' : 'Haftalik plani goruntule'}
+                  {data?.groupName ? 'Bugün için plan henüz yok' : 'Haftalık planı görüntüle'}
                 </div>
               </div>
-              <span className="text-2xl">📋</span>
+              <span className="text-3xl">📋</span>
             </div>
           </div>
         </Link>
@@ -193,14 +261,16 @@ export function AthleteDashboardContent() {
           ]).map((d: any, i: number) => {
             const maxCompleted = Math.max(...(stats?.weeklyProgress || [{ completed: 1 }]).map((p: any) => p.completed), 1)
             const heightPercent = d.completed > 0 ? Math.max((d.completed / maxCompleted) * 100, 15) : 8
+            const isToday = i === new Date().getDay() - 1 || (new Date().getDay() === 0 && i === 6)
             return (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
                 <span className="text-xs font-medium text-gray-600 mb-1">{d.completed > 0 ? d.completed : ''}</span>
                 <div
-                  className={`w-full rounded-t transition-all ${d.completed > 0 ? 'bg-emerald-500' : 'bg-gray-200'}`}
+                  className={`w-full rounded-t transition-all ${d.completed > 0 ? 'bg-emerald-500' : isToday ? 'bg-emerald-200' : 'bg-gray-200'
+                    }`}
                   style={{ height: `${heightPercent}%` }}
                 />
-                <span className="text-xs text-gray-500">{d.day}</span>
+                <span className={`text-xs ${isToday ? 'text-emerald-600 font-bold' : 'text-gray-500'}`}>{d.day}</span>
               </div>
             )
           })}
@@ -212,21 +282,31 @@ export function AthleteDashboardContent() {
 
       {/* Recent Achievements */}
       <div className="bg-white p-6 rounded-xl border border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-4">Son Başarımlar</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-gray-900">Son Başarımlar</h3>
+          <Link href="/dashboard/achievements" className="text-sm text-emerald-600 hover:underline">
+            Tümünü gör →
+          </Link>
+        </div>
         {stats?.recentAchievements?.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {stats.recentAchievements.map((a: any) => (
-              <div key={a.id} className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
-                <div className="w-10 h-10 bg-yellow-200 rounded-full flex items-center justify-center text-xl">🏆</div>
-                <div>
-                  <div className="font-medium text-sm">{a.achievement?.name}</div>
-                  <div className="text-xs text-gray-500">+{a.achievement?.xp_reward} XP</div>
-                </div>
-              </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {stats.recentAchievements.slice(0, 4).map((a: any) => (
+              <AchievementBadge
+                key={a.id}
+                name={a.achievement?.name || 'Başarım'}
+                icon="🏆"
+                xpReward={a.achievement?.xp_reward}
+                earnedAt={a.earned_at}
+                size="md"
+              />
             ))}
           </div>
         ) : (
-          <p className="text-gray-400 text-sm">Henüz başarım kazanılmadı. Antrenmanlarla başla!</p>
+          <div className="text-center py-8">
+            <div className="text-4xl mb-2">🎯</div>
+            <p className="text-gray-400 text-sm">Henüz başarım kazanılmadı.</p>
+            <p className="text-gray-500 text-sm mt-1">Antrenmanlarla başla ve ödüller kazan!</p>
+          </div>
         )}
       </div>
     </div>

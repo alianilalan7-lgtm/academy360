@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/auth'
+import { processExerciseCompletion } from '@/lib/gamification'
 
 const completionSchema = z.object({
   program_id: z.string().uuid().optional().nullable(),
@@ -43,7 +44,8 @@ export async function POST(
       }, { status: 400 })
     }
 
-    const { data: completion, error } = await (supabase as any)
+    // Create completion record
+    const { data: completion, error } = await supabase
       .from('exercise_completions')
       .insert({
         athlete_id: athleteProfile.id,
@@ -59,9 +61,30 @@ export async function POST(
       return NextResponse.json({ data: null, error: 'Tamamlama kaydedilemedi', success: false }, { status: 500 })
     }
 
-    // TODO: Update athlete XP (function to be implemented)
+    // Process gamification (XP, streak, achievements)
+    let gamificationResult = null
+    try {
+      gamificationResult = await processExerciseCompletion(supabase, athleteProfile.id)
+    } catch (gamificationError) {
+      console.error('Gamification processing error:', gamificationError)
+      // Don't fail the request if gamification fails
+    }
 
-    return NextResponse.json({ data: completion, error: null, success: true }, { status: 201 })
+    return NextResponse.json({
+      data: {
+        completion,
+        gamification: gamificationResult ? {
+          xpEarned: gamificationResult.xpEarned,
+          newTotalXp: gamificationResult.newTotalXp,
+          leveledUp: gamificationResult.leveledUp,
+          newLevel: gamificationResult.newLevel,
+          currentStreak: gamificationResult.currentStreak,
+          newAchievements: gamificationResult.newAchievements,
+        } : null,
+      },
+      error: null,
+      success: true,
+    }, { status: 201 })
   } catch (error) {
     console.error('Exercise complete POST error:', error)
     if (error instanceof Error && error.message === 'Unauthorized') {

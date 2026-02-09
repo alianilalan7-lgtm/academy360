@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRole } from '@/contexts/role-context'
 import { AccessDenied } from '@/components/access-denied'
-
+import { ProgramCardSkeleton } from '@/components/ui/skeleton'
 export default function ProgramsPage() {
   const { activeRole, isLoading: roleLoading } = useRole()
 
@@ -67,8 +67,19 @@ function AthleteProgramsContent() {
     cancelled: 'Iptal',
   }
 
+
+
+  // ...
+
   if (loading) {
-    return <div className="space-y-4">{[1, 2, 3].map(i => <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse" />)}</div>
+    return (
+      <div className="space-y-6">
+        <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => <ProgramCardSkeleton key={i} />)}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -164,9 +175,8 @@ function CoachProgramsContent() {
                   <h3 className="font-semibold text-gray-900">{p.title}</h3>
                   <p className="text-sm text-gray-500 mt-1">{p.category || 'Genel'}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  p.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
-                }`}>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${p.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                  }`}>
                   {p.is_active ? 'Aktif' : 'Pasif'}
                 </span>
               </div>

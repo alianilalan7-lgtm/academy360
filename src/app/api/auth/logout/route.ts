@@ -2,6 +2,23 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
+ * GET /api/auth/logout
+ * Signs out the current user and redirects to login
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    await supabase.auth.signOut()
+
+    // Redirect to login page
+    return NextResponse.redirect(new URL('/login', request.url))
+  } catch (err) {
+    console.error('Logout error:', err)
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+}
+
+/**
  * POST /api/auth/logout
  * Signs out the current user and invalidates their session
  */
@@ -57,3 +74,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+

@@ -16,7 +16,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 })
 
 const TARGET_EMAIL = 'alianilalan@hotmail.com'
-const NEW_PASSWORD = 'Test1234!'
+const NEW_PASSWORD = '75109Aa.'
 
 async function resetPassword() {
     console.log('🔍 Checking user:', TARGET_EMAIL)

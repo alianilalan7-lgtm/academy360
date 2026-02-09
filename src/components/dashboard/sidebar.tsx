@@ -60,12 +60,13 @@ const navItems: Record<string, NavItem[]> = {
 interface SidebarProps {
   role: UserRole
   userName?: string
+  userAvatar?: string | null
   orgName?: string
 }
 
-export function Sidebar({ userName, orgName }: SidebarProps) {
+export function Sidebar({ userName, userAvatar, orgName }: SidebarProps) {
   const pathname = usePathname()
-  const { isOpen, close } = useSidebar()
+  const { isOpen, isCollapsed, close, toggleCollapse } = useSidebar()
   const { activeRole, availableRoles } = useRole()
 
   // Use activeRole from context, fallback to prop
@@ -80,7 +81,7 @@ export function Sidebar({ userName, orgName }: SidebarProps) {
       {/* Mobile overlay backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
           onClick={close}
           aria-hidden="true"
         />
@@ -89,18 +90,46 @@ export function Sidebar({ userName, orgName }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200
-          flex flex-col transform transition-transform duration-300 ease-in-out
+          fixed inset-y-0 left-0 z-50 
+          ${isCollapsed ? 'w-20' : 'w-64'}
+          flex flex-col transform transition-all duration-300 ease-in-out
           lg:relative lg:translate-x-0 lg:z-auto
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          
+          /* Glass morphism effect */
+          bg-white/80 backdrop-blur-xl
+          border-r border-white/20
+          shadow-[0_8px_32px_rgba(0,0,0,0.1)]
         `}
       >
         {/* Header */}
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-emerald-600">Academy360</h1>
-            {currentOrgName && <p className="text-sm text-gray-500 mt-1">{currentOrgName}</p>}
-          </div>
+        <div className={`p-4 border-b border-gray-200/50 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+          {!isCollapsed && (
+            <div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+                Academy360
+              </h1>
+              {currentOrgName && <p className="text-sm text-gray-500 mt-1">{currentOrgName}</p>}
+            </div>
+          )}
+
+          {/* Collapse toggle button - desktop */}
+          <button
+            onClick={toggleCollapse}
+            className="hidden lg:flex p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+            aria-label={isCollapsed ? 'Menüyü genişlet' : 'Menüyü daralt'}
+          >
+            <svg
+              className={`w-5 h-5 transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+            </svg>
+          </button>
+
+          {/* Close button - mobile */}
           <button
             onClick={close}
             className="p-2 text-gray-400 hover:text-gray-600 rounded-lg lg:hidden"
@@ -113,7 +142,7 @@ export function Sidebar({ userName, orgName }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {items.map(item => {
             // For dashboard home, only match exact path
             const isActive = item.href === '/dashboard'
@@ -124,35 +153,57 @@ export function Sidebar({ userName, orgName }: SidebarProps) {
                 key={item.href}
                 href={item.href}
                 onClick={close}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
+                title={isCollapsed ? item.label : undefined}
+                className={`
+                  flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                  ${isCollapsed ? 'justify-center' : ''}
+                  ${isActive
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
+                    : 'text-gray-600 hover:bg-white/60 hover:text-gray-900 hover:shadow-md'
+                  }
+                `}
               >
-                <span className="text-lg">{item.icon}</span>
-                {item.label}
+                <span className={`${isCollapsed ? 'text-xl' : 'text-lg'}`}>{item.icon}</span>
+                {!isCollapsed && item.label}
               </Link>
             )
           })}
         </nav>
 
         {/* User section */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-sm font-bold text-emerald-700">
-              {userName?.charAt(0)?.toUpperCase() || 'U'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{userName || 'Kullanici'}</p>
-              <p className="text-xs text-gray-500">{ROLE_LABELS[currentRole]}</p>
-            </div>
+        <div className="p-4 border-t border-gray-200/50 bg-white/40">
+          <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
+            {userAvatar ? (
+              <img
+                src={userAvatar}
+                alt={userName}
+                className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-lg"
+              />
+            ) : (
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg">
+                {userName?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+            )}
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{userName || 'Kullanici'}</p>
+                <p className="text-xs text-gray-500">{ROLE_LABELS[currentRole]}</p>
+              </div>
+            )}
           </div>
           <Link
             href="/api/auth/logout"
-            className="mt-3 block w-full text-center py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className={`
+              mt-3 flex items-center justify-center gap-2 py-2 text-sm text-red-600 
+              hover:bg-red-50 rounded-lg transition-colors
+              ${isCollapsed ? 'px-2' : 'w-full'}
+            `}
+            title={isCollapsed ? 'Çıkış Yap' : undefined}
           >
-            Cikis Yap
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            {!isCollapsed && 'Cikis Yap'}
           </Link>
         </div>
       </aside>

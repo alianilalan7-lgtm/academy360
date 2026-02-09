@@ -53,7 +53,7 @@ export async function GET(
 ) {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id } = await params
 
     // Validate UUID
@@ -148,7 +148,7 @@ export async function PATCH(
 ) {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id } = await params
 
     // Only coaches and admins can update programs
@@ -275,7 +275,7 @@ export async function DELETE(
 ) {
   try {
     const user = await requireAuth()
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
     const { id } = await params
 
     // Only coaches and admins can delete programs
