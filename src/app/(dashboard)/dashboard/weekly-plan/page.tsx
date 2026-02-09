@@ -75,7 +75,7 @@ function WeeklyPlanContent({ orgId }: { orgId: string | null }) {
         }
         if (!org) return
 
-        const res = await fetch(`/api/groups?organization_id=${org}`)
+        const res = await fetch(`/api/groups?organizationId=${org}`)
         const data = await res.json()
         if (data.success) {
           setGroups(data.data || [])
@@ -126,16 +126,26 @@ function WeeklyPlanContent({ orgId }: { orgId: string | null }) {
     setSaving(true)
     setSaved(false)
     try {
+      const isUpdate = Boolean(existingPlan?.id)
+      const payload = isUpdate
+        ? {
+            id: existingPlan.id,
+            plan_data: planData,
+            notes: notes || null,
+            is_published: true,
+          }
+        : {
+            group_id: selectedGroup || null,
+            week_start: weekStart,
+            plan_data: planData,
+            notes: notes || null,
+            is_published: true,
+          }
+
       const res = await fetch('/api/weekly-plans', {
-        method: 'POST',
+        method: isUpdate ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          group_id: selectedGroup || null,
-          week_start: weekStart,
-          plan_data: planData,
-          notes: notes || null,
-          is_published: true,
-        }),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (data.success) {

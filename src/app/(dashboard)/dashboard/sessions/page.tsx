@@ -76,7 +76,7 @@ function CoachSessionsContent() {
 
         const [sessionsRes, groupsRes] = await Promise.all([
           fetch(`/api/sessions?organizationId=${oid}&pageSize=100&sortOrder=desc`),
-          fetch(`/api/groups?organization_id=${oid}`),
+          fetch(`/api/groups?organizationId=${oid}`),
         ])
 
         const sessionsData = await sessionsRes.json()

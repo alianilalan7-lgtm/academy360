@@ -61,7 +61,7 @@ function CompareContent() {
         }
         if (!org) return
 
-        const res = await fetch(`/api/athletes?organization_id=${org}`)
+        const res = await fetch(`/api/athletes?organizationId=${org}`)
         const data = await res.json()
         if (data.success) {
           setAthletes((data.data || []).map((a: any) => ({

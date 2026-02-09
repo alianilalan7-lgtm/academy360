@@ -49,6 +49,66 @@ interface AssignmentDetail {
 
 type TabType = 'overview' | 'exercises' | 'scores'
 
+function normalizeExerciseName(name: string): string {
+  return name.trim().toLocaleLowerCase('tr-TR')
+}
+
+function collectExerciseRefs(
+  node: unknown,
+  refs: { exerciseIds: Set<string>; exerciseNames: Set<string> },
+  inExerciseCollection = false
+) {
+  if (Array.isArray(node)) {
+    node.forEach(item => collectExerciseRefs(item, refs, inExerciseCollection))
+    return
+  }
+
+  if (!node || typeof node !== 'object') return
+
+  for (const [rawKey, value] of Object.entries(node as Record<string, unknown>)) {
+    const key = rawKey.toLowerCase()
+
+    if ((key === 'exercise_ids' || key === 'exerciseids') && Array.isArray(value)) {
+      value.forEach(id => {
+        if (typeof id === 'string' && id) refs.exerciseIds.add(id)
+      })
+    }
+
+    if ((key === 'exercise_id' || key === 'exerciseid') && typeof value === 'string' && value) {
+      refs.exerciseIds.add(value)
+    }
+
+    const nextInExerciseCollection = inExerciseCollection || key.includes('exercise')
+    if (nextInExerciseCollection && key === 'id' && typeof value === 'string' && value) {
+      refs.exerciseIds.add(value)
+    }
+
+    if (nextInExerciseCollection && (key === 'name' || key === 'title') && typeof value === 'string' && value) {
+      refs.exerciseNames.add(normalizeExerciseName(value))
+    }
+
+    collectExerciseRefs(value, refs, nextInExerciseCollection)
+  }
+}
+
+function filterExercisesForProgram(allExercises: Exercise[], program: ProgramDetail | null): Exercise[] {
+  if (!program?.content_data) return allExercises
+
+  const refs = {
+    exerciseIds: new Set<string>(),
+    exerciseNames: new Set<string>(),
+  }
+  collectExerciseRefs(program.content_data, refs)
+
+  if (refs.exerciseIds.size === 0 && refs.exerciseNames.size === 0) {
+    return allExercises
+  }
+
+  return allExercises.filter(ex =>
+    refs.exerciseIds.has(ex.id) || refs.exerciseNames.has(normalizeExerciseName(ex.name))
+  )
+}
+
 export default function ProgramDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const { activeRole } = useRole()
@@ -66,24 +126,32 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     async function load() {
       try {
+        let loadedProgram: ProgramDetail | null = null
+
         // Try to load as assignment first (athlete), then as program (coach)
         if (isAthlete) {
           const assignRes = await fetch(`/api/assignments/${id}`)
           const assignData = await assignRes.json()
           if (assignData.success && assignData.data) {
             setAssignment(assignData.data)
-            setProgram(assignData.data.program)
+            loadedProgram = assignData.data.program
+            setProgram(loadedProgram)
           }
         } else {
           const progRes = await fetch(`/api/programs/${id}`)
           const progData = await progRes.json()
-          if (progData.success) setProgram(progData.data)
+          if (progData.success) {
+            loadedProgram = progData.data
+            setProgram(loadedProgram)
+          }
         }
 
         // Load exercises
         const exRes = await fetch('/api/exercises?pageSize=100')
         const exData = await exRes.json()
-        if (exData.success) setExercises(exData.data || [])
+        if (exData.success) {
+          setExercises(filterExercisesForProgram(exData.data || [], loadedProgram))
+        }
       } catch {
         // handle silently
       } finally {
@@ -337,7 +405,7 @@ function SkillScoringSection({ programId }: { programId: string }) {
         }
         if (!orgId) return
 
-        const res = await fetch(`/api/athletes?organization_id=${orgId}`)
+        const res = await fetch(`/api/athletes?organizationId=${orgId}`)
         const data = await res.json()
         if (data.success) setAthletes(data.data || [])
       } catch {

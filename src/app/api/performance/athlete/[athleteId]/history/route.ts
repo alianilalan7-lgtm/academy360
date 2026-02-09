@@ -24,6 +24,15 @@ interface PerformanceRecord {
   metric_type: MetricType | null
 }
 
+interface HistoryRecordResponse {
+  id: string
+  value: number
+  recorded_at: string
+  is_verified: boolean
+  notes: string | null
+  metric_type: MetricType | null
+}
+
 interface DataPoint {
   id: string
   value: number
@@ -191,6 +200,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Calculate trends and format for charts
     const historyData = calculateTrendsAndFormat(groupedByMetric, interval, limit)
+    // Backward-compatible flat list expected by some pages (measurements/player detail).
+    const recordsData: HistoryRecordResponse[] = filteredRecords
+      .slice(-limit)
+      .reverse()
+      .map(record => ({
+        id: record.id,
+        value: record.value,
+        recorded_at: record.recorded_at || new Date().toISOString(),
+        is_verified: record.is_verified ?? false,
+        notes: record.notes,
+        metric_type: record.metric_type,
+      }))
 
     return NextResponse.json({
       success: true,
@@ -198,6 +219,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         athleteId,
         athleteName: (athlete.user as { full_name: string | null } | null)?.full_name,
         metrics: historyData,
+        records: recordsData,
         filters: {
           metric: metricCode,
           metricTypeId,

@@ -90,7 +90,7 @@ function AttendanceChart({ role }: { role: string }) {
             org = me.data?.memberships?.[0]?.organization_id
           }
           if (org) {
-            const res = await fetch(`/api/athletes?organization_id=${org}`)
+            const res = await fetch(`/api/athletes?organizationId=${org}`)
             const data = await res.json()
             if (data.success) setAthletes(data.data || [])
           }
@@ -279,7 +279,7 @@ function PerformanceChart({ role }: { role: string }) {
             org = me.data?.memberships?.[0]?.organization_id
           }
           if (org) {
-            const res = await fetch(`/api/athletes?organization_id=${org}`)
+            const res = await fetch(`/api/athletes?organizationId=${org}`)
             const data = await res.json()
             if (data.success) setAthletes(data.data || [])
           }
@@ -452,7 +452,7 @@ function RadarChart({ role }: { role: string }) {
             org = me.data?.memberships?.[0]?.organization_id
           }
           if (org) {
-            const res = await fetch(`/api/athletes?organization_id=${org}`)
+            const res = await fetch(`/api/athletes?organizationId=${org}`)
             const data = await res.json()
             if (data.success) setAthletes(data.data || [])
           }
@@ -594,7 +594,7 @@ function SeasonComparison({ role }: { role: string }) {
             org = me.data?.memberships?.[0]?.organization_id
           }
           if (org) {
-            const res = await fetch(`/api/athletes?organization_id=${org}`)
+            const res = await fetch(`/api/athletes?organizationId=${org}`)
             const data = await res.json()
             if (data.success) setAthletes(data.data || [])
           }

@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { requireAuth, requireRole, isAdmin, isCoach } from '@/lib/auth'
+import { requireAuth, requireRole, isAdmin, isCoach, isParent } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { AthleteProfileInsert, ApiResponse, AthleteWithProfile } from '@/lib/types'
@@ -33,14 +33,17 @@ const queryParamsSchema = z.object({
 /**
  * GET /api/athletes
  * List athletes with filtering, pagination, and search
- * Access: Coaches, Club Admins, Super Admins
+ * Access: Coaches, Club Admins, Super Admins, Parents (only linked athletes)
  */
 export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse<AthleteWithProfile[]> | { success: false; error: string; total?: number; page?: number; pageSize?: number; totalPages?: number }>> {
   try {
     const user = await requireAuth()
+    const isUserAdmin = isAdmin(user)
+    const isUserCoach = isCoach(user)
+    const isUserParent = isParent(user)
 
     // Verify user has appropriate role to view athletes
-    if (!isAdmin(user) && !isCoach(user)) {
+    if (!isUserAdmin && !isUserCoach && !isUserParent) {
       return NextResponse.json(
         { success: false, error: 'Forbidden: insufficient permissions to view athletes' },
         { status: 403 }
@@ -80,6 +83,39 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       )
     }
 
+    // Parents can only see their verified linked athletes in the current org.
+    let parentAthleteUserIds: string[] | null = null
+    if (isUserParent && !isUserAdmin && !isUserCoach) {
+      const { data: parentRelations, error: parentRelationsError } = await supabase
+        .from('parent_athlete_relations')
+        .select('athlete_user_id')
+        .eq('parent_user_id', user.id)
+        .eq('organization_id', effectiveOrgId)
+        .eq('verified', true)
+        .eq('can_view_progress', true)
+
+      if (parentRelationsError) {
+        console.error('Error fetching parent-athlete relations:', parentRelationsError)
+        return NextResponse.json(
+          { success: false, error: 'Failed to fetch linked athletes' },
+          { status: 500 }
+        )
+      }
+
+      parentAthleteUserIds = (parentRelations ?? []).map(r => r.athlete_user_id)
+
+      if (parentAthleteUserIds.length === 0) {
+        return NextResponse.json({
+          success: true,
+          data: [],
+          total: 0,
+          page,
+          pageSize,
+          totalPages: 0,
+        })
+      }
+    }
+
     // Build the query
     let query = supabase
       .from('athlete_profiles')
@@ -96,6 +132,10 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
         )
       `, { count: 'exact' })
       .eq('organization_id', effectiveOrgId)
+
+    if (parentAthleteUserIds) {
+      query = query.in('user_id', parentAthleteUserIds)
+    }
 
     // Filter by group if specified
     if (groupId) {
