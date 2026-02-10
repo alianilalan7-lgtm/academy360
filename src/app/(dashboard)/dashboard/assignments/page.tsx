@@ -3,19 +3,14 @@
 import { useEffect, useState } from 'react'
 import { useRole } from '@/contexts/role-context'
 import { AccessDenied } from '@/components/access-denied'
+import { getAssignmentStatusMeta } from '@/lib/status'
+import { PanelEmptyState, PanelInlineAlert, PanelPageSkeleton } from '@/components/ui/panel-states'
 
-const STATUS_COLORS: Record<string, string> = {
-  assigned: 'bg-blue-100 text-blue-700',
-  in_progress: 'bg-yellow-100 text-yellow-700',
-  completed: 'bg-emerald-100 text-emerald-700',
-  cancelled: 'bg-gray-100 text-gray-500',
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  assigned: 'Atandi',
-  in_progress: 'Devam Ediyor',
-  completed: 'Tamamlandi',
-  cancelled: 'Iptal Edildi',
+interface FeedbackMessage {
+  type: '' | 'success' | 'error' | 'info'
+  text: string
+  actionHref?: string
+  actionLabel?: string
 }
 
 export default function AssignmentsPage() {
@@ -25,7 +20,8 @@ export default function AssignmentsPage() {
   const [assignments, setAssignments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [message, setMessage] = useState({ type: '', text: '' })
+  const [loadError, setLoadError] = useState('')
+  const [message, setMessage] = useState<FeedbackMessage>({ type: '', text: '' })
 
   const [form, setForm] = useState({
     athleteId: '',
@@ -42,6 +38,7 @@ export default function AssignmentsPage() {
 
     async function load() {
       try {
+        setLoadError('')
         let orgId = currentOrgId
         if (!orgId) {
           const meRes = await fetch('/api/auth/me')
@@ -64,6 +61,7 @@ export default function AssignmentsPage() {
         if (programsData.success) setPrograms(programsData.data || [])
         if (assignmentsData.success) setAssignments(assignmentsData.data || [])
       } catch {
+        setLoadError('Atamalar yuklenemedi. Lutfen sayfayi yenileyin.')
       } finally {
         setLoading(false)
       }
@@ -96,7 +94,14 @@ export default function AssignmentsPage() {
       const data = await res.json()
 
       if (data.success) {
-        setMessage({ type: 'success', text: 'Program basariyla atandi!' })
+        const assignedAthlete = athletes.find((a: any) => a.id === form.athleteId)
+        const athleteName = assignedAthlete?.user_profile?.full_name || 'Sporcu'
+        setMessage({
+          type: 'success',
+          text: `Program basariyla atandi: ${athleteName}`,
+          actionHref: `/dashboard/players/${form.athleteId}`,
+          actionLabel: 'Sporcu profiline git',
+        })
         if (Array.isArray(data.data)) {
           setAssignments(prev => [...data.data, ...prev])
         }
@@ -126,25 +131,26 @@ export default function AssignmentsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="h-8 bg-gray-200 rounded w-48 animate-pulse" />
-        <div className="h-64 bg-gray-200 rounded-xl animate-pulse" />
-        <div className="h-48 bg-gray-200 rounded-xl animate-pulse" />
-      </div>
-    )
+    return <PanelPageSkeleton rows={4} />
   }
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Program Atamalari</h1>
 
+      {loadError ? <PanelInlineAlert type="error" message={loadError} /> : null}
+
       <div className="bg-white p-6 rounded-xl border border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Program Ata</h2>
 
         {message.text && (
-          <div className={`mb-4 p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-            {message.text}
+          <div className="mb-4">
+            <PanelInlineAlert
+              type={message.type === 'error' ? 'error' : message.type === 'success' ? 'success' : 'info'}
+              message={message.text}
+              actionHref={message.actionHref}
+              actionLabel={message.actionLabel}
+            />
           </div>
         )}
 
@@ -222,10 +228,17 @@ export default function AssignmentsPage() {
         </h2>
 
         {assignments.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">Henuz atama yapilmamis</div>
+          <PanelEmptyState
+            icon="📌"
+            title="Henuz atama yapilmamis"
+            description="Ilk program atamasini yukaridaki formdan yapabilirsin."
+            actionHref="/dashboard/programs"
+            actionLabel="Programlari gor"
+          />
         ) : (
           <div className="divide-y divide-gray-100">
             {assignments.map((a: any) => {
+              const statusMeta = getAssignmentStatusMeta(a.status)
               const athleteName = a.athlete?.user_profile?.full_name || 'Isim yok'
               const programName = a.program?.title || 'Program yok'
               const initial = athleteName.charAt(0).toUpperCase()
@@ -243,8 +256,8 @@ export default function AssignmentsPage() {
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[a.status] || 'bg-gray-100 text-gray-500'}`}>
-                      {STATUS_LABELS[a.status] || a.status}
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusMeta.className}`}>
+                      {statusMeta.label}
                     </span>
                     {a.progress_percentage !== undefined && a.progress_percentage !== null && (
                       <div className="flex items-center gap-2">

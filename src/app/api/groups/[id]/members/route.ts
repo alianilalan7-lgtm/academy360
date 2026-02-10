@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { uuidLikeSchema } from '@/lib/validation'
 import type { ApiResponse, GroupMember } from '@/lib/types'
 
 // Group member roles
@@ -10,7 +11,7 @@ type GroupMemberRole = typeof GROUP_MEMBER_ROLES[number]
 
 // Validation schema for adding members
 const addMembersSchema = z.object({
-  userIds: z.array(z.string().uuid()).min(1, 'At least one user ID is required'),
+  userIds: z.array(uuidLikeSchema()).min(1, 'At least one user ID is required'),
   role: z.enum(GROUP_MEMBER_ROLES).optional().default('member'),
 })
 
@@ -43,6 +44,10 @@ interface GroupMemberWithProfile extends GroupMember {
   } | null
 }
 
+function optionalParam(value: string | null): string | undefined {
+  return value ?? undefined
+}
+
 /**
  * GET /api/groups/[id]/members
  * List members of a group
@@ -58,7 +63,7 @@ export async function GET(
     const { id: groupId } = await params
 
     // Validate UUID format
-    const uuidSchema = z.string().uuid()
+    const uuidSchema = uuidLikeSchema()
     const idValidation = uuidSchema.safeParse(groupId)
 
     if (!idValidation.success) {
@@ -96,8 +101,8 @@ export async function GET(
 
     // Parse and validate query parameters
     const queryResult = queryParamsSchema.safeParse({
-      isActive: searchParams.get('isActive'),
-      role: searchParams.get('role'),
+      isActive: optionalParam(searchParams.get('isActive')),
+      role: optionalParam(searchParams.get('role')),
       page: searchParams.get('page') ?? 1,
       pageSize: searchParams.get('pageSize') ?? 50,
     })
@@ -220,7 +225,7 @@ export async function POST(
     const { id: groupId } = await params
 
     // Validate UUID format
-    const uuidSchema = z.string().uuid()
+    const uuidSchema = uuidLikeSchema()
     const idValidation = uuidSchema.safeParse(groupId)
 
     if (!idValidation.success) {

@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { uuidLikeSchema } from '@/lib/validation'
 import type { ApiResponse, Attendance, AttendanceInsert } from '@/lib/types'
 
 // Attendance status values
@@ -10,7 +11,7 @@ const ATTENDANCE_STATUSES = ['present', 'absent', 'late', 'excused'] as const
 // Validation schema for bulk attendance recording
 const bulkAttendanceSchema = z.object({
   attendees: z.array(z.object({
-    athleteId: z.string().uuid('Invalid athlete ID'),
+    athleteId: uuidLikeSchema('Invalid athlete ID'),
     status: z.enum(ATTENDANCE_STATUSES),
     notes: z.string().max(1000, 'Notes must be less than 1000 characters').optional(),
     checkInTime: z.string().datetime().optional(),
@@ -64,7 +65,7 @@ export async function GET(
     const { id: sessionId } = await params
 
     // Validate UUID format
-    const uuidSchema = z.string().uuid()
+    const uuidSchema = uuidLikeSchema()
     const idValidation = uuidSchema.safeParse(sessionId)
 
     if (!idValidation.success) {
@@ -204,7 +205,7 @@ export async function POST(
     }
 
     // Validate UUID format
-    const uuidSchema = z.string().uuid()
+    const uuidSchema = uuidLikeSchema()
     const idValidation = uuidSchema.safeParse(sessionId)
 
     if (!idValidation.success) {

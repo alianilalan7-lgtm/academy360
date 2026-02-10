@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useRole } from '@/contexts/role-context'
 import { AccessDenied } from '@/components/access-denied'
+import { getSessionStatusMeta } from '@/lib/status'
 
 interface Session {
   id: string
@@ -187,7 +188,7 @@ export default function SessionDetailPage() {
 
       if (data.success) {
         setSession(data.data)
-        setSuccess(`Seans durumu güncellendi: ${statusLabels[newStatus] || newStatus}`)
+        setSuccess(`Seans durumu guncellendi: ${getSessionStatusMeta(newStatus).label}`)
       } else {
         setError(data.error || 'Durum güncellenemedi')
       }
@@ -231,19 +232,7 @@ export default function SessionDetailPage() {
 
   if (!session) return null
 
-  const statusLabels: Record<string, string> = {
-    scheduled: 'Planlandı',
-    in_progress: 'Devam Ediyor',
-    completed: 'Tamamlandı',
-    cancelled: 'İptal Edildi',
-  }
-
-  const statusColors: Record<string, string> = {
-    scheduled: 'bg-blue-100 text-blue-700',
-    in_progress: 'bg-yellow-100 text-yellow-700',
-    completed: 'bg-emerald-100 text-emerald-700',
-    cancelled: 'bg-red-100 text-red-700',
-  }
+  const sessionStatus = getSessionStatusMeta(session.status)
 
   const typeLabels: Record<string, string> = {
     training: 'Antrenman',
@@ -303,8 +292,8 @@ export default function SessionDetailPage() {
             {session.group?.name || 'Grup belirtilmemiş'} · {typeLabels[session.session_type || 'training']}
           </p>
         </div>
-        <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[session.status]}`}>
-          {statusLabels[session.status]}
+        <span className={`px-3 py-1 rounded-full text-sm font-medium ${sessionStatus.className}`}>
+          {sessionStatus.label}
         </span>
       </div>
 

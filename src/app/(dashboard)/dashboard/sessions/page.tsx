@@ -4,19 +4,14 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRole } from '@/contexts/role-context'
 import { AccessDenied } from '@/components/access-denied'
+import { getSessionStatusMeta } from '@/lib/status'
+import { PanelEmptyState, PanelInlineAlert, PanelPageSkeleton } from '@/components/ui/panel-states'
 
-const STATUS_COLORS: Record<string, string> = {
-  scheduled: 'bg-blue-100 text-blue-700',
-  in_progress: 'bg-yellow-100 text-yellow-700',
-  completed: 'bg-emerald-100 text-emerald-700',
-  cancelled: 'bg-gray-100 text-gray-500',
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  scheduled: 'Planlanmis',
-  in_progress: 'Devam Eden',
-  completed: 'Tamamlandi',
-  cancelled: 'Iptal Edildi',
+interface FeedbackMessage {
+  type: '' | 'success' | 'error' | 'info'
+  text: string
+  actionHref?: string
+  actionLabel?: string
 }
 
 function getPrimaryOrgId(meData: any): string | null {
@@ -54,7 +49,8 @@ function CoachSessionsContent() {
   const [filter, setFilter] = useState('all')
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [message, setMessage] = useState({ type: '', text: '' })
+  const [message, setMessage] = useState<FeedbackMessage>({ type: '', text: '' })
+  const [loadError, setLoadError] = useState('')
   const [orgId, setOrgId] = useState('')
 
   const [form, setForm] = useState({
@@ -70,6 +66,7 @@ function CoachSessionsContent() {
   useEffect(() => {
     async function load() {
       try {
+        setLoadError('')
         let oid = currentOrgId
         if (!oid) {
           const meRes = await fetch('/api/auth/me')
@@ -90,6 +87,7 @@ function CoachSessionsContent() {
         if (sessionsData.success) setSessions(sessionsData.data || [])
         if (groupsData.success) setGroups(groupsData.data || [])
       } catch {
+        setLoadError('Seans verileri yuklenemedi. Lutfen sayfayi yenileyin.')
       } finally {
         setLoading(false)
       }
@@ -126,7 +124,12 @@ function CoachSessionsContent() {
       const data = await res.json()
 
       if (data.success) {
-        setMessage({ type: 'success', text: 'Seans basariyla olusturuldu!' })
+        setMessage({
+          type: 'success',
+          text: 'Seans basariyla olusturuldu!',
+          actionHref: `/dashboard/sessions/${data.data.id}`,
+          actionLabel: 'Seans detayina git',
+        })
         setSessions(prev => [data.data, ...prev])
         setForm({ title: '', scheduledStart: '', scheduledEnd: '', location: '', groupId: '', description: '', notes: '' })
         setShowForm(false)
@@ -152,9 +155,9 @@ function CoachSessionsContent() {
 
   const FILTER_OPTIONS = [
     { key: 'all', label: 'Tumu' },
-    { key: 'scheduled', label: 'Planlanmis' },
-    { key: 'in_progress', label: 'Devam Eden' },
-    { key: 'completed', label: 'Tamamlandi' },
+    { key: 'scheduled', label: getSessionStatusMeta('scheduled').label },
+    { key: 'in_progress', label: getSessionStatusMeta('in_progress').label },
+    { key: 'completed', label: getSessionStatusMeta('completed').label },
   ]
 
   return (
@@ -169,10 +172,15 @@ function CoachSessionsContent() {
         </button>
       </div>
 
+      {loadError ? <PanelInlineAlert type="error" message={loadError} /> : null}
+
       {message.text && (
-        <div className={`p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-          {message.text}
-        </div>
+        <PanelInlineAlert
+          type={message.type === 'error' ? 'error' : message.type === 'success' ? 'success' : 'info'}
+          message={message.text}
+          actionHref={message.actionHref}
+          actionLabel={message.actionLabel}
+        />
       )}
 
       {showForm && (
@@ -266,51 +274,54 @@ function CoachSessionsContent() {
       </div>
 
       {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse" />
-          ))}
-        </div>
+        <PanelPageSkeleton withHeader={false} rows={4} />
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">Seans bulunamadi</div>
+        <PanelEmptyState
+          icon="📅"
+          title="Seans bulunamadi"
+          description="Filtreyi degistirerek veya yeni seans olusturarak devam edebilirsin."
+        />
       ) : (
         <div className="space-y-3">
-          {filtered.map((s: any) => (
-            <Link
-              key={s.id}
-              href={`/dashboard/sessions/${s.id}`}
-              className="block bg-white p-5 rounded-xl border border-gray-200 hover:border-emerald-300 transition-colors"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="font-semibold text-gray-900">{s.title}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[s.status] || 'bg-gray-100 text-gray-500'}`}>
-                      {STATUS_LABELS[s.status] || s.status}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mt-2">
-                    <span className="flex items-center gap-1">
-                      📅 {formatDate(s.scheduled_start)}
-                    </span>
-                    {s.location && (
-                      <span className="flex items-center gap-1">
-                        📍 {s.location}
+          {filtered.map((s: any) => {
+            const statusMeta = getSessionStatusMeta(s.status)
+            return (
+              <Link
+                key={s.id}
+                href={`/dashboard/sessions/${s.id}`}
+                className="block bg-white p-5 rounded-xl border border-gray-200 hover:border-emerald-300 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-1">
+                      <h3 className="font-semibold text-gray-900">{s.title}</h3>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusMeta.className}`}>
+                        {statusMeta.label}
                       </span>
-                    )}
-                    {s.group?.name && (
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mt-2">
                       <span className="flex items-center gap-1">
-                        👥 {s.group.name}
+                        📅 {formatDate(s.scheduled_start)}
                       </span>
-                    )}
+                      {s.location && (
+                        <span className="flex items-center gap-1">
+                          📍 {s.location}
+                        </span>
+                      )}
+                      {s.group?.name && (
+                        <span className="flex items-center gap-1">
+                          👥 {s.group.name}
+                        </span>
+                      )}
+                    </div>
                   </div>
+                  <svg className="w-5 h-5 text-gray-300 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </div>
-                <svg className="w-5 h-5 text-gray-300 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            )
+          })}
         </div>
       )}
     </div>
@@ -362,14 +373,7 @@ function AthleteSessionsContent() {
   }
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="h-8 bg-gray-200 rounded w-48 animate-pulse" />
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse" />)}
-        </div>
-      </div>
-    )
+    return <PanelPageSkeleton rows={3} />
   }
 
   return (
@@ -377,35 +381,37 @@ function AthleteSessionsContent() {
       <h1 className="text-2xl font-bold text-gray-900">Yaklasan Seanslarim</h1>
 
       {error ? (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
-          {error}
-        </div>
+        <PanelInlineAlert type="error" message={error} />
       ) : sessions.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-          <div className="text-4xl mb-3">📅</div>
-          <p className="text-gray-500">Yaklasan seans bulunamadi.</p>
-        </div>
+        <PanelEmptyState
+          icon="📅"
+          title="Yaklasan seans bulunamadi"
+          description="Yeni planlanan seanslar burada gorunecek."
+        />
       ) : (
         <div className="space-y-3">
-          {sessions.map((s: any) => (
-            <div
-              key={s.id}
-              className="bg-white p-5 rounded-xl border border-gray-200"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900">{s.title}</h3>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mt-2">
-                    <span>📅 {formatDate(s.scheduled_start)}</span>
-                    {s.location && <span>📍 {s.location}</span>}
+          {sessions.map((s: any) => {
+            const statusMeta = getSessionStatusMeta(s.status)
+            return (
+              <div
+                key={s.id}
+                className="bg-white p-5 rounded-xl border border-gray-200"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{s.title}</h3>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mt-2">
+                      <span>📅 {formatDate(s.scheduled_start)}</span>
+                      {s.location && <span>📍 {s.location}</span>}
+                    </div>
                   </div>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusMeta.className}`}>
+                    {statusMeta.label}
+                  </span>
                 </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[s.status] || 'bg-gray-100'}`}>
-                  {STATUS_LABELS[s.status] || s.status}
-                </span>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

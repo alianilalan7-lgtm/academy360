@@ -2,12 +2,13 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, requireRole, isAdmin, isCoach, isParent } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { uuidLikeSchema } from '@/lib/validation'
 import type { AthleteProfileInsert, ApiResponse, AthleteWithProfile } from '@/lib/types'
 
 // Validation schema for creating an athlete profile
 const createAthleteSchema = z.object({
-  userId: z.string().uuid('Invalid user ID'),
-  organizationId: z.string().uuid('Invalid organization ID'),
+  userId: uuidLikeSchema('Invalid user ID'),
+  organizationId: uuidLikeSchema('Invalid organization ID'),
   birthDate: z.string().datetime().optional().nullable(),
   position: z.string().max(100).optional().nullable(),
   jerseyNumber: z.number().int().min(0).max(999).optional().nullable(),
@@ -21,8 +22,8 @@ const createAthleteSchema = z.object({
 
 // Query params schema for filtering athletes
 const queryParamsSchema = z.object({
-  organizationId: z.string().uuid().optional(),
-  groupId: z.string().uuid().optional(),
+  organizationId: uuidLikeSchema().optional(),
+  groupId: uuidLikeSchema().optional(),
   search: z.string().max(100).optional(),
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),

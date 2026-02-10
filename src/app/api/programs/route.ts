@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { uuidLikeSchema } from '@/lib/validation'
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import type { ApiResponse, PaginatedResponse, Program } from '@/lib/types'
@@ -34,7 +35,7 @@ const programCreateSchema = z.object({
   content_data: jsonValueSchema.optional().nullable(),
   is_active: z.boolean().optional().default(true),
   is_public: z.boolean().optional().default(false),
-  organization_id: z.string().uuid().optional().nullable(),
+  organization_id: uuidLikeSchema().optional().nullable(),
   source: z.string().optional().nullable(),
   external_id: z.string().optional().nullable(),
 })
@@ -44,7 +45,7 @@ const programQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).optional().default(20),
   category: z.string().optional(),
   difficulty: z.coerce.number().int().min(1).max(10).optional(),
-  organization_id: z.string().uuid().optional(),
+  organization_id: uuidLikeSchema().optional(),
   is_active: z.enum(['true', 'false']).optional(),
   is_public: z.enum(['true', 'false']).optional(),
   search: z.string().optional(),

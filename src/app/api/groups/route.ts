@@ -2,11 +2,12 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { uuidLikeSchema } from '@/lib/validation'
 import type { ApiResponse, Group, GroupInsert } from '@/lib/types'
 
 // Validation schema for creating a group
 const createGroupSchema = z.object({
-  organizationId: z.string().uuid('Invalid organization ID'),
+  organizationId: uuidLikeSchema('Invalid organization ID'),
   name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
   description: z.string().max(500).optional().nullable(),
   ageGroup: z.string().max(50).optional().nullable(),
@@ -17,7 +18,7 @@ const createGroupSchema = z.object({
 
 // Query params schema for filtering groups
 const queryParamsSchema = z.object({
-  organizationId: z.string().uuid().optional(),
+  organizationId: uuidLikeSchema().optional(),
   isActive: z.enum(['true', 'false']).optional(),
   ageGroup: z.string().max(50).optional(),
   search: z.string().max(100).optional(),

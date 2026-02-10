@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRole } from '@/contexts/role-context'
 import { AccessDenied } from '@/components/access-denied'
-import { ProgramCardSkeleton } from '@/components/ui/skeleton'
+import { PanelEmptyState, PanelInlineAlert, PanelPageSkeleton } from '@/components/ui/panel-states'
+import { getAssignmentStatusMeta } from '@/lib/status'
 export default function ProgramsPage() {
   const { activeRole, isLoading: roleLoading } = useRole()
 
@@ -66,33 +67,10 @@ function AthleteProgramsContent() {
     load()
   }, [])
 
-  const statusColors: Record<string, string> = {
-    assigned: 'bg-blue-100 text-blue-700',
-    in_progress: 'bg-yellow-100 text-yellow-700',
-    completed: 'bg-emerald-100 text-emerald-700',
-    cancelled: 'bg-gray-100 text-gray-500',
-  }
-
-  const statusLabels: Record<string, string> = {
-    assigned: 'Atandi',
-    in_progress: 'Devam Ediyor',
-    completed: 'Tamamlandi',
-    cancelled: 'Iptal',
-  }
-
-
-
   // ...
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => <ProgramCardSkeleton key={i} />)}
-        </div>
-      </div>
-    )
+    return <PanelPageSkeleton rows={3} />
   }
 
   return (
@@ -100,29 +78,32 @@ function AthleteProgramsContent() {
       <h1 className="text-2xl font-bold text-gray-900">Programlarim</h1>
 
       {error ? (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
-          {error}
-        </div>
+        <PanelInlineAlert type="error" message={error} />
       ) : programs.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-          <div className="text-4xl mb-3">📋</div>
-          <p className="text-gray-500">Henuz atanmis program yok.</p>
-        </div>
+        <PanelEmptyState
+          icon="📋"
+          title="Henuz atanmis program yok"
+          description="Kocun sana yeni program atadiginda burada listelenecek."
+          actionHref="/dashboard/my-plan"
+          actionLabel="Bugunun planina git"
+        />
       ) : (
         <div className="space-y-3">
-          {programs.map((ap: any) => (
-            <Link
-              key={ap.id}
-              href={`/dashboard/programs/${ap.id}`}
-              className="block bg-white p-5 rounded-xl border border-gray-200 hover:border-emerald-300 transition-colors"
-            >
+          {programs.map((ap: any) => {
+            const assignmentStatus = getAssignmentStatusMeta(ap.status)
+            return (
+              <Link
+                key={ap.id}
+                href={`/dashboard/programs/${ap.id}`}
+                className="block bg-white p-5 rounded-xl border border-gray-200 hover:border-emerald-300 transition-colors"
+              >
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-gray-900">{ap.program?.title || 'Program'}</h3>
                   <p className="text-sm text-gray-500 mt-1">{ap.program?.category}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[ap.status] || 'bg-gray-100'}`}>
-                  {statusLabels[ap.status] || ap.status}
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${assignmentStatus.className}`}>
+                  {assignmentStatus.label}
                 </span>
               </div>
               <div className="mt-3 flex items-center gap-4">
@@ -131,8 +112,9 @@ function AthleteProgramsContent() {
                 </div>
                 <span className="text-sm text-gray-500">{ap.progress_percentage || 0}%</span>
               </div>
-            </Link>
-          ))}
+              </Link>
+            )
+          })}
         </div>
       )}
     </div>
@@ -167,7 +149,7 @@ function CoachProgramsContent() {
   }, [currentOrgId])
 
   if (loading) {
-    return <div className="space-y-4">{[1, 2, 3].map(i => <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse" />)}</div>
+    return <PanelPageSkeleton rows={3} />
   }
 
   return (
@@ -175,10 +157,13 @@ function CoachProgramsContent() {
       <h1 className="text-2xl font-bold text-gray-900">Programlar</h1>
 
       {programs.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-          <div className="text-4xl mb-3">📋</div>
-          <p className="text-gray-500">Henuz program olusturulmamis.</p>
-        </div>
+        <PanelEmptyState
+          icon="📋"
+          title="Henuz program olusturulmamis"
+          description="Yeni bir program olusturup sporculara atayabilirsin."
+          actionHref="/dashboard/assignments"
+          actionLabel="Atama ekranina git"
+        />
       ) : (
         <div className="space-y-3">
           {programs.map((p: any) => (

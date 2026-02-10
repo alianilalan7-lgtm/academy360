@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { uuidLikeSchema } from '@/lib/validation'
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import type { ApiResponse, WeeklyPlan } from '@/lib/types'
 
 const planQuerySchema = z.object({
-  group_id: z.string().uuid().optional(),
+  group_id: uuidLikeSchema().optional(),
   week_start: z.string().optional(),
 })
 
 const planCreateSchema = z.object({
-  group_id: z.string().uuid().optional().nullable(),
+  group_id: uuidLikeSchema().optional().nullable(),
   week_start: z.string().min(1),
   plan_data: z.record(z.string(), z.any()),
   notes: z.string().optional().nullable(),
@@ -120,7 +121,7 @@ export async function POST(request: NextRequest) {
 }
 
 const planUpdateSchema = z.object({
-  id: z.string().uuid(),
+  id: uuidLikeSchema(),
   plan_data: z.record(z.string(), z.any()).optional(),
   notes: z.string().optional().nullable(),
   is_published: z.boolean().optional(),

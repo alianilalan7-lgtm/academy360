@@ -232,6 +232,8 @@ export async function GET(request: NextRequest) {
       status: membership.status,
       joinedAt: membership.joined_at,
       invitedAt: membership.invited_at,
+      organization_id: membership.organization_id,
+      organizationId: membership.organization_id,
       organization: membership.organizations,
     }))
 

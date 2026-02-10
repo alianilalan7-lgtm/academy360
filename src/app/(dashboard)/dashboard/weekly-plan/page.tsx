@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRole } from '@/contexts/role-context'
 import { AccessDenied } from '@/components/access-denied'
+import { PanelEmptyState, PanelInlineAlert, PanelPageSkeleton } from '@/components/ui/panel-states'
 
 interface DayPlan {
   title: string
@@ -12,6 +13,52 @@ interface DayPlan {
 }
 
 type WeekDay = 'pazartesi' | 'sali' | 'carsamba' | 'persembe' | 'cuma' | 'cumartesi' | 'pazar'
+
+interface FeedbackMessage {
+  type: '' | 'success' | 'error' | 'info'
+  text: string
+  actionHref?: string
+  actionLabel?: string
+}
+
+type PlanData = Partial<Record<WeekDay, DayPlan>>
+
+interface GroupOption {
+  id: string
+  name: string
+}
+
+interface WeeklyPlanItem {
+  id: string
+  plan_data?: PlanData | null
+  notes?: string | null
+}
+
+interface MeResponse {
+  data?: {
+    memberships?: Array<{
+      organization_id?: string | null
+    }>
+  }
+}
+
+interface GroupsResponse {
+  success: boolean
+  data?: GroupOption[]
+  error?: string
+}
+
+interface WeeklyPlansResponse {
+  success: boolean
+  data?: WeeklyPlanItem[]
+  error?: string
+}
+
+interface WeeklyPlanMutationResponse {
+  success: boolean
+  data?: WeeklyPlanItem
+  error?: string
+}
 
 const DAYS: { key: WeekDay; label: string }[] = [
   { key: 'pazartesi', label: 'Pazartesi' },
@@ -43,7 +90,7 @@ function getMonday(d: Date): string {
 export default function WeeklyPlanPage() {
   const { activeRole, isLoading: roleLoading, currentOrgId } = useRole()
 
-  if (roleLoading) return <div className="h-64 bg-gray-200 rounded-xl animate-pulse" />
+  if (roleLoading) return <PanelPageSkeleton rows={3} />
 
   if (activeRole !== 'coach' && activeRole !== 'club_admin') {
     return <AccessDenied requiredRoles={['coach', 'club_admin']} />
@@ -54,35 +101,42 @@ export default function WeeklyPlanPage() {
 
 function WeeklyPlanContent({ orgId }: { orgId: string | null }) {
   const [weekStart, setWeekStart] = useState(getMonday(new Date()))
-  const [groups, setGroups] = useState<any[]>([])
+  const [groups, setGroups] = useState<GroupOption[]>([])
   const [selectedGroup, setSelectedGroup] = useState<string>('')
-  const [planData, setPlanData] = useState<Record<WeekDay, DayPlan>>({} as any)
+  const [planData, setPlanData] = useState<PlanData>({})
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [existingPlan, setExistingPlan] = useState<any>(null)
+  const [loadError, setLoadError] = useState('')
+  const [message, setMessage] = useState<FeedbackMessage>({ type: '', text: '' })
+  const [existingPlan, setExistingPlan] = useState<WeeklyPlanItem | null>(null)
 
   // Load groups
   useEffect(() => {
     async function loadGroups() {
       try {
+        setLoadError('')
         let org = orgId
         if (!org) {
           const meRes = await fetch('/api/auth/me')
-          const me = await meRes.json()
+          const me = await meRes.json() as MeResponse
           org = me.data?.memberships?.[0]?.organization_id
         }
-        if (!org) return
+        if (!org) {
+          setLoadError('Organizasyon bilgisi bulunamadi.')
+          return
+        }
 
         const res = await fetch(`/api/groups?organizationId=${org}`)
-        const data = await res.json()
+        const data = await res.json() as GroupsResponse
         if (data.success) {
           setGroups(data.data || [])
           if (data.data?.length) setSelectedGroup(data.data[0].id)
+        } else {
+          setLoadError(data.error || 'Gruplar yuklenemedi.')
         }
       } catch {
-        // handle silently
+        setLoadError('Gruplar yuklenemedi. Lutfen sayfayi yenileyin.')
       } finally {
         setLoading(false)
       }
@@ -96,8 +150,9 @@ function WeeklyPlanContent({ orgId }: { orgId: string | null }) {
       if (!selectedGroup || !weekStart) return
 
       try {
+        setMessage(prev => (prev.type === 'error' ? { type: '', text: '' } : prev))
         const res = await fetch(`/api/weekly-plans?group_id=${selectedGroup}&week_start=${weekStart}`)
-        const data = await res.json()
+        const data = await res.json() as WeeklyPlansResponse
         if (data.success && data.data?.length) {
           const plan = data.data[0]
           setExistingPlan(plan)
@@ -105,11 +160,11 @@ function WeeklyPlanContent({ orgId }: { orgId: string | null }) {
           setNotes(plan.notes || '')
         } else {
           setExistingPlan(null)
-          setPlanData({} as any)
+          setPlanData({})
           setNotes('')
         }
       } catch {
-        // handle silently
+        setMessage({ type: 'error', text: 'Plan verisi yuklenemedi.' })
       }
     }
     loadPlan()
@@ -123,8 +178,8 @@ function WeeklyPlanContent({ orgId }: { orgId: string | null }) {
   }
 
   async function handleSave() {
+    setMessage({ type: '', text: '' })
     setSaving(true)
-    setSaved(false)
     try {
       const isUpdate = Boolean(existingPlan?.id)
       const payload = isUpdate
@@ -147,14 +202,20 @@ function WeeklyPlanContent({ orgId }: { orgId: string | null }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      const data = await res.json()
+      const data = await res.json() as WeeklyPlanMutationResponse
       if (data.success) {
-        setSaved(true)
         setExistingPlan(data.data)
-        setTimeout(() => setSaved(false), 3000)
+        setMessage({
+          type: 'success',
+          text: isUpdate ? 'Plan basariyla guncellendi.' : 'Plan basariyla olusturuldu.',
+          actionHref: '/dashboard/my-plan',
+          actionLabel: 'Sporcu gorunumunu ac',
+        })
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Plan kaydedilemedi.' })
       }
     } catch {
-      // handle silently
+      setMessage({ type: 'error', text: 'Plan kaydedilemedi. Baglanti hatasi.' })
     } finally {
       setSaving(false)
     }
@@ -167,12 +228,29 @@ function WeeklyPlanContent({ orgId }: { orgId: string | null }) {
   }
 
   if (loading) {
-    return <div className="space-y-4">{[1, 2, 3].map(i => <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse" />)}</div>
+    return <PanelPageSkeleton rows={4} />
   }
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Haftalik Antrenman Plani</h1>
+
+      {loadError ? <PanelInlineAlert type="error" message={loadError} /> : null}
+
+      {message.text ? (
+        <PanelInlineAlert
+          type={message.type === 'error' ? 'error' : message.type === 'success' ? 'success' : 'info'}
+          message={message.text}
+          actionHref={message.actionHref}
+          actionLabel={message.actionLabel}
+        />
+      ) : null}
+
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <p className="text-sm text-gray-700">
+          Bu plani kaydettiginde sporcu panelinde <span className="font-semibold">Bugunun Antrenman Plani</span> kartina yansir.
+        </p>
+      </div>
 
       {/* Controls */}
       <div className="flex flex-wrap gap-4 items-end">
@@ -184,7 +262,7 @@ function WeeklyPlanContent({ orgId }: { orgId: string | null }) {
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           >
             <option value="">Grup secin...</option>
-            {groups.map((g: any) => (
+            {groups.map((g) => (
               <option key={g.id} value={g.id}>{g.name}</option>
             ))}
           </select>
@@ -207,14 +285,24 @@ function WeeklyPlanContent({ orgId }: { orgId: string | null }) {
             →
           </button>
         </div>
-
-        {existingPlan && (
-          <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Mevcut plan yuklendi</span>
-        )}
       </div>
 
+      {existingPlan ? (
+        <PanelInlineAlert type="info" message="Bu hafta icin mevcut plan yuklendi. Degisiklik yapip kaydedebilirsin." />
+      ) : null}
+
+      {groups.length === 0 ? (
+        <PanelEmptyState
+          icon="👥"
+          title="Plan olusturmak icin once grup gerekiyor"
+          description="Grup olusturduktan sonra haftalik plani bu ekrandan yonetebilirsin."
+          actionHref="/dashboard/groups"
+          actionLabel="Gruplara git"
+        />
+      ) : null}
+
       {/* Weekly grid */}
-      <div className="grid gap-3 lg:grid-cols-7">
+      <div className={`grid gap-3 lg:grid-cols-7 ${groups.length === 0 ? 'opacity-60 pointer-events-none' : ''}`}>
         {DAYS.map(day => {
           const dayData = planData[day.key] || { title: '', type: '', duration: 0, notes: '' }
           const isRest = dayData.type === 'rest'
@@ -284,12 +372,11 @@ function WeeklyPlanContent({ orgId }: { orgId: string | null }) {
       <div className="flex items-center gap-3">
         <button
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || !selectedGroup}
           className="px-6 py-2.5 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600 transition-colors disabled:opacity-50"
         >
           {saving ? 'Kaydediliyor...' : 'Plani Kaydet'}
         </button>
-        {saved && <span className="text-emerald-600 text-sm font-medium">Kaydedildi!</span>}
       </div>
     </div>
   )

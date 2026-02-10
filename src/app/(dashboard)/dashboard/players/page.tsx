@@ -1,43 +1,92 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRole } from '@/contexts/role-context'
 import { AccessDenied } from '@/components/access-denied'
+import { PanelEmptyState, PanelInlineAlert, PanelPageSkeleton } from '@/components/ui/panel-states'
+
+interface FeedbackMessage {
+  type: '' | 'success' | 'error' | 'info'
+  text: string
+  actionHref?: string
+  actionLabel?: string
+}
+
+interface AthleteListItem {
+  id: string
+  user_profile?: {
+    full_name?: string | null
+  } | null
+  position?: string | null
+  jersey_number?: number | null
+  current_level?: number | null
+  total_xp?: number | null
+}
+
+interface MeResponse {
+  data?: {
+    memberships?: Array<{
+      organization_id?: string | null
+    }>
+  }
+}
+
+interface AthletesResponse {
+  success: boolean
+  data?: AthleteListItem[]
+  error?: string
+}
+
+interface RegisterAthleteResponse {
+  success: boolean
+  data?: AthleteListItem
+  error?: string
+}
 
 export default function PlayersPage() {
   const { activeRole, currentOrgId, isLoading: roleLoading } = useRole()
-  const [players, setPlayers] = useState<any[]>([])
+  const [players, setPlayers] = useState<AthleteListItem[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [message, setMessage] = useState<FeedbackMessage>({ type: '', text: '' })
   const [showAddModal, setShowAddModal] = useState(false)
 
   const canView = activeRole === 'coach' || activeRole === 'club_admin'
 
-  async function loadPlayers() {
+  const loadPlayers = useCallback(async () => {
     try {
+      setLoadError('')
       let orgId = currentOrgId
       if (!orgId) {
         const meRes = await fetch('/api/auth/me')
-        const me = await meRes.json()
+        const me = await meRes.json() as MeResponse
         orgId = me.data?.memberships?.[0]?.organization_id
       }
-      if (!orgId) return
+      if (!orgId) {
+        setLoadError('Organizasyon bilgisi bulunamadi.')
+        return
+      }
 
       const res = await fetch(`/api/athletes?organizationId=${orgId}&pageSize=50`)
-      const data = await res.json()
-      if (data.success) setPlayers(data.data || [])
+      const data = await res.json() as AthletesResponse
+      if (data.success) {
+        setPlayers(data.data || [])
+      } else {
+        setLoadError(data.error || 'Sporcular yuklenemedi.')
+      }
     } catch {
-      // silent
+      setLoadError('Sporcular yuklenemedi. Lutfen sayfayi yenileyin.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentOrgId])
 
   useEffect(() => {
     if (!canView || roleLoading) return
     loadPlayers()
-  }, [canView, currentOrgId, roleLoading])
+  }, [canView, loadPlayers, roleLoading])
 
   if (roleLoading) {
     return <div className="h-64 bg-gray-200 rounded-xl animate-pulse" />
@@ -50,6 +99,10 @@ export default function PlayersPage() {
   const filtered = players.filter(p =>
     !search || p.user_profile?.full_name?.toLowerCase().includes(search.toLowerCase())
   )
+
+  if (loading) {
+    return <PanelPageSkeleton rows={4} />
+  }
 
   return (
     <div className="space-y-6">
@@ -66,6 +119,24 @@ export default function PlayersPage() {
         </button>
       </div>
 
+      {message.text ? (
+        <PanelInlineAlert
+          type={message.type === 'error' ? 'error' : message.type === 'success' ? 'success' : 'info'}
+          message={message.text}
+          actionHref={message.actionHref}
+          actionLabel={message.actionLabel}
+        />
+      ) : null}
+
+      {loadError ? <PanelInlineAlert type="error" message={loadError} /> : null}
+
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <p className="text-sm text-gray-700">
+          Bu listeden sececegin sporcuya eklenen notlar, puanlar ve atamalar sporcu panelindeki
+          <span className="font-semibold"> Koc Guncellemeleri</span> bolumune yansir.
+        </p>
+      </div>
+
       <input
         type="text"
         placeholder="Oyuncu ara..."
@@ -74,21 +145,27 @@ export default function PlayersPage() {
         className="w-full max-w-sm px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
       />
 
-      {loading ? (
-        <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-16 bg-gray-200 rounded-lg animate-pulse" />)}</div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-gray-400 mb-4">Sporcu bulunamadi</div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            Ilk Oyuncuyu Ekle
-          </button>
-        </div>
+      {filtered.length === 0 ? (
+        players.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+            <div className="text-gray-500 mb-4">Henuz sporcu yok</div>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Ilk Oyuncuyu Ekle
+            </button>
+          </div>
+        ) : (
+          <PanelEmptyState
+            icon="🔎"
+            title="Aramaya uygun sporcu bulunamadi"
+            description="Arama metnini degistirip tekrar deneyebilirsin."
+          />
+        )
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
-          {filtered.map((p: any) => (
+          {filtered.map((p) => (
             <Link
               key={p.id}
               href={`/dashboard/players/${p.id}`}
@@ -116,7 +193,15 @@ export default function PlayersPage() {
       {showAddModal && (
         <AddPlayerModal
           onClose={() => setShowAddModal(false)}
-          onSuccess={() => {
+          onSuccess={(createdAthlete) => {
+            const athleteName = createdAthlete?.user_profile?.full_name || 'Sporcu'
+            const athleteId = createdAthlete?.id
+            setMessage({
+              type: 'success',
+              text: `${athleteName} basariyla eklendi.`,
+              actionHref: athleteId ? `/dashboard/players/${athleteId}` : undefined,
+              actionLabel: athleteId ? 'Sporcu profiline git' : undefined,
+            })
             setShowAddModal(false)
             setLoading(true)
             loadPlayers()
@@ -127,7 +212,7 @@ export default function PlayersPage() {
   )
 }
 
-function AddPlayerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+function AddPlayerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (createdAthlete: AthleteListItem) => void }) {
   const [fullName, setFullName] = useState('')
   const [position, setPosition] = useState('')
   const [jerseyNumber, setJerseyNumber] = useState('')
@@ -154,10 +239,10 @@ function AddPlayerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
         }),
       })
 
-      const data = await res.json()
+      const data = await res.json() as RegisterAthleteResponse
 
-      if (data.success) {
-        onSuccess()
+      if (data.success && data.data) {
+        onSuccess(data.data)
       } else {
         setError(data.error || 'Bir hata olustu')
       }

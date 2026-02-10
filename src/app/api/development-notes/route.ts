@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { uuidLikeSchema } from '@/lib/validation'
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import type { ApiResponse, PaginatedResponse, DevelopmentNote } from '@/lib/types'
 
 const noteQuerySchema = z.object({
-  athlete_id: z.string().uuid().optional(),
-  session_id: z.string().uuid().optional(),
+  athlete_id: uuidLikeSchema().optional(),
+  session_id: uuidLikeSchema().optional(),
   category: z.string().optional(),
   page: z.coerce.number().int().positive().optional().default(1),
   pageSize: z.coerce.number().int().min(1).max(100).optional().default(20),
 })
 
 const noteCreateSchema = z.object({
-  athlete_id: z.string().uuid(),
-  session_id: z.string().uuid().optional().nullable(),
+  athlete_id: uuidLikeSchema(),
+  session_id: uuidLikeSchema().optional().nullable(),
   note: z.string().min(1),
   category: z.string().optional().nullable(),
   is_private: z.boolean().optional().default(false),

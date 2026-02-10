@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { uuidLikeSchema } from '@/lib/validation'
 import type { SessionInsert, ApiResponse, Session, SessionWithAttendance } from '@/lib/types'
 
 // Session types and statuses
@@ -10,9 +11,9 @@ const SESSION_STATUSES = ['scheduled', 'in_progress', 'completed', 'cancelled'] 
 
 // Validation schema for creating a session
 const createSessionSchema = z.object({
-  organizationId: z.string().uuid('Invalid organization ID'),
-  groupId: z.string().uuid('Invalid group ID').optional().nullable(),
-  coachId: z.string().uuid('Invalid coach ID').optional().nullable(),
+  organizationId: uuidLikeSchema('Invalid organization ID'),
+  groupId: uuidLikeSchema('Invalid group ID').optional().nullable(),
+  coachId: uuidLikeSchema('Invalid coach ID').optional().nullable(),
   title: z.string().min(1, 'Title is required').max(200, 'Title must be less than 200 characters'),
   description: z.string().max(2000, 'Description must be less than 2000 characters').optional().nullable(),
   sessionType: z.enum(SESSION_TYPES).default('training'),
@@ -25,9 +26,9 @@ const createSessionSchema = z.object({
 
 // Query params schema for filtering sessions
 const queryParamsSchema = z.object({
-  organizationId: z.string().uuid().optional(),
-  groupId: z.string().uuid().optional(),
-  coachId: z.string().uuid().optional(),
+  organizationId: uuidLikeSchema().optional(),
+  groupId: uuidLikeSchema().optional(),
+  coachId: uuidLikeSchema().optional(),
   sessionType: z.enum(SESSION_TYPES).optional(),
   status: z.enum(SESSION_STATUSES).optional(),
   startDate: z.string().datetime().optional(),

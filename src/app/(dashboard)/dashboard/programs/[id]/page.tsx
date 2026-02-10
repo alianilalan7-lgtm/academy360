@@ -4,6 +4,7 @@ import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
 import { useRole } from '@/contexts/role-context'
 import type { Exercise, ExerciseCategory, ExerciseDifficulty } from '@/lib/types'
+import { getAssignmentStatusMeta } from '@/lib/status'
 
 const CATEGORY_LABELS: Record<ExerciseCategory, string> = {
   warmup: 'Topsuz Isinma',
@@ -215,6 +216,7 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
 
   const completionCount = completedIds.size
   const completionPercent = exercises.length > 0 ? Math.round((completionCount / exercises.length) * 100) : 0
+  const assignmentStatus = assignment ? getAssignmentStatusMeta(assignment.status) : null
 
   return (
     <div className="space-y-6">
@@ -250,13 +252,8 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ id: st
           </div>
           {assignment && (
             <div className="text-right">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                assignment.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
-                assignment.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700' :
-                'bg-blue-100 text-blue-700'
-              }`}>
-                {assignment.status === 'completed' ? 'Tamamlandi' :
-                 assignment.status === 'in_progress' ? 'Devam Ediyor' : 'Atandi'}
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${assignmentStatus?.className || 'bg-gray-100 text-gray-500'}`}>
+                {assignmentStatus?.label || assignment.status}
               </span>
             </div>
           )}

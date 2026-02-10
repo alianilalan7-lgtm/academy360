@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { uuidLikeSchema } from '@/lib/validation'
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import type { ApiResponse, PaginatedResponse, SkillScore } from '@/lib/types'
 
 const skillScoreQuerySchema = z.object({
-  athlete_id: z.string().uuid().optional(),
+  athlete_id: uuidLikeSchema().optional(),
   category: z.enum(['technical', 'physical', 'behavioral']).optional(),
   skill_name: z.string().optional(),
   page: z.coerce.number().int().positive().optional().default(1),
@@ -13,17 +14,17 @@ const skillScoreQuerySchema = z.object({
 })
 
 const skillScoreCreateSchema = z.object({
-  athlete_id: z.string().uuid(),
+  athlete_id: uuidLikeSchema(),
   category: z.enum(['technical', 'physical', 'behavioral']),
   skill_name: z.string().min(1).max(100),
   score: z.number().int().min(1).max(10),
-  session_id: z.string().uuid().optional().nullable(),
+  session_id: uuidLikeSchema().optional().nullable(),
   notes: z.string().optional().nullable(),
 })
 
 const bulkSkillScoreSchema = z.object({
-  athlete_id: z.string().uuid(),
-  session_id: z.string().uuid().optional().nullable(),
+  athlete_id: uuidLikeSchema(),
+  session_id: uuidLikeSchema().optional().nullable(),
   scores: z.array(z.object({
     category: z.enum(['technical', 'physical', 'behavioral']),
     skill_name: z.string().min(1).max(100),

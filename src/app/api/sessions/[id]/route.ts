@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { uuidLikeSchema } from '@/lib/validation'
 import type { ApiResponse, Session, SessionWithAttendance } from '@/lib/types'
 
 // Session types and statuses
@@ -10,8 +11,8 @@ const SESSION_STATUSES = ['scheduled', 'in_progress', 'completed', 'cancelled'] 
 
 // Validation schema for updating a session
 const updateSessionSchema = z.object({
-  groupId: z.string().uuid('Invalid group ID').optional().nullable(),
-  coachId: z.string().uuid('Invalid coach ID').optional().nullable(),
+  groupId: uuidLikeSchema('Invalid group ID').optional().nullable(),
+  coachId: uuidLikeSchema('Invalid coach ID').optional().nullable(),
   title: z.string().min(1, 'Title is required').max(200, 'Title must be less than 200 characters').optional(),
   description: z.string().max(2000, 'Description must be less than 2000 characters').optional().nullable(),
   sessionType: z.enum(SESSION_TYPES).optional(),
@@ -43,7 +44,7 @@ export async function GET(
     const { id } = await params
 
     // Validate UUID format
-    const uuidSchema = z.string().uuid()
+    const uuidSchema = uuidLikeSchema()
     const idValidation = uuidSchema.safeParse(id)
 
     if (!idValidation.success) {
@@ -148,7 +149,7 @@ export async function PATCH(
     const { id } = await params
 
     // Validate UUID format
-    const uuidSchema = z.string().uuid()
+    const uuidSchema = uuidLikeSchema()
     const idValidation = uuidSchema.safeParse(id)
 
     if (!idValidation.success) {
@@ -384,7 +385,7 @@ export async function DELETE(
     }
 
     // Validate UUID format
-    const uuidSchema = z.string().uuid()
+    const uuidSchema = uuidLikeSchema()
     const idValidation = uuidSchema.safeParse(id)
 
     if (!idValidation.success) {

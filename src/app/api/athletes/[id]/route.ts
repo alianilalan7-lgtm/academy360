@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach, isAthlete, isParent } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { uuidLikeSchema } from '@/lib/validation'
 import type { AthleteProfileUpdate, ApiResponse, AthleteWithProfile } from '@/lib/types'
 
 // Validation schema for updating an athlete profile
@@ -36,7 +37,7 @@ export async function GET(
     const { id } = await params
 
     // Validate UUID format
-    const uuidSchema = z.string().uuid()
+    const uuidSchema = uuidLikeSchema()
     const idValidation = uuidSchema.safeParse(id)
 
     if (!idValidation.success) {
@@ -46,7 +47,8 @@ export async function GET(
       )
     }
 
-    // Fetch the athlete profile with related data
+    // Fetch athlete and user profile first.
+    // Group memberships are loaded in a separate query to avoid fragile relation embedding.
     const { data: athlete, error } = await supabase
       .from('athlete_profiles')
       .select(`
@@ -60,14 +62,6 @@ export async function GET(
           locale,
           timezone,
           created_at
-        ),
-        group_members(
-          id,
-          group_id,
-          role,
-          is_active,
-          joined_at,
-          group:groups(id, name, age_group, description)
         )
       `)
       .eq('id', id)
@@ -90,9 +84,27 @@ export async function GET(
       )
     }
 
+    const { data: groupMembers } = await supabase
+      .from('group_members')
+      .select(`
+        id,
+        group_id,
+        role,
+        is_active,
+        joined_at,
+        group:groups(id, name, age_group, description)
+      `)
+      .eq('user_id', athlete.user_id)
+      .eq('is_active', true)
+
+    const athleteWithGroups = {
+      ...athlete,
+      group_members: groupMembers ?? [],
+    }
+
     return NextResponse.json({
       success: true,
-      data: athlete as any,
+      data: athleteWithGroups as any,
       error: null,
     })
   } catch (error) {
@@ -127,7 +139,7 @@ export async function PATCH(
     const { id } = await params
 
     // Validate UUID format
-    const uuidSchema = z.string().uuid()
+    const uuidSchema = uuidLikeSchema()
     const idValidation = uuidSchema.safeParse(id)
 
     if (!idValidation.success) {
@@ -323,7 +335,7 @@ export async function DELETE(
     }
 
     // Validate UUID format
-    const uuidSchema = z.string().uuid()
+    const uuidSchema = uuidLikeSchema()
     const idValidation = uuidSchema.safeParse(id)
 
     if (!idValidation.success) {

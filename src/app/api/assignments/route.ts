@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { uuidLikeSchema } from '@/lib/validation'
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach, isAthlete } from '@/lib/auth'
 import type { ApiResponse, PaginatedResponse, AssignedProgram } from '@/lib/types'
 
 // Validation schemas
 const assignmentCreateSchema = z.object({
-  program_id: z.string().uuid('Invalid program ID'),
-  athlete_ids: z.array(z.string().uuid()).min(1, 'At least one athlete is required'),
-  group_id: z.string().uuid().optional().nullable(),
+  program_id: uuidLikeSchema('Invalid program ID'),
+  athlete_ids: z.array(uuidLikeSchema()).min(1, 'At least one athlete is required'),
+  group_id: uuidLikeSchema().optional().nullable(),
   start_date: z.string().datetime().optional().nullable(),
   due_date: z.string().datetime().optional().nullable(),
   notes: z.string().max(1000).optional().nullable(),
@@ -17,11 +18,11 @@ const assignmentCreateSchema = z.object({
 const assignmentQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional().default(1),
   pageSize: z.coerce.number().int().min(1).max(100).optional().default(20),
-  program_id: z.string().uuid().optional(),
-  athlete_id: z.string().uuid().optional(),
-  group_id: z.string().uuid().optional(),
+  program_id: uuidLikeSchema().optional(),
+  athlete_id: uuidLikeSchema().optional(),
+  group_id: uuidLikeSchema().optional(),
   status: z.enum(['assigned', 'in_progress', 'completed', 'cancelled']).optional(),
-  assigned_by: z.string().uuid().optional(),
+  assigned_by: uuidLikeSchema().optional(),
   from_date: z.string().datetime().optional(),
   to_date: z.string().datetime().optional(),
   sort_by: z.enum(['created_at', 'due_date', 'start_date', 'status', 'progress_percentage']).optional().default('created_at'),

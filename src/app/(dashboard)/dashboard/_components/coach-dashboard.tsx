@@ -99,6 +99,29 @@ export function CoachDashboardContent() {
           <p className="text-sm text-blue-600 mt-1">Seans icin yoklama kaydi olusturun</p>
         </Link>
       </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="font-semibold text-gray-900">Sporcu Paneli Baglantisi</h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Yaptigin atama, puan ve notlar sporcu panelindeki Koc Guncellemeleri bolumune yansir.
+            </p>
+          </div>
+          <span className="text-2xl">🔗</span>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link href="/dashboard/assignments" className="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors">
+            Program Atama
+          </Link>
+          <Link href="/dashboard/programs" className="px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors">
+            Beceri Puani
+          </Link>
+          <Link href="/dashboard/players" className="px-3 py-1.5 text-xs font-medium rounded-lg bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors">
+            Gelisim Notu
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { uuidLikeSchema } from '@/lib/validation'
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import type { ApiResponse, Program } from '@/lib/types'
@@ -57,7 +58,7 @@ export async function GET(
     const { id } = await params
 
     // Validate UUID
-    if (!z.string().uuid().safeParse(id).success) {
+    if (!uuidLikeSchema().safeParse(id).success) {
       const response: ApiResponse<null> = {
         data: null,
         error: 'Invalid program ID format',
@@ -162,7 +163,7 @@ export async function PATCH(
     }
 
     // Validate UUID
-    if (!z.string().uuid().safeParse(id).success) {
+    if (!uuidLikeSchema().safeParse(id).success) {
       const response: ApiResponse<null> = {
         data: null,
         error: 'Invalid program ID format',
@@ -289,7 +290,7 @@ export async function DELETE(
     }
 
     // Validate UUID
-    if (!z.string().uuid().safeParse(id).success) {
+    if (!uuidLikeSchema().safeParse(id).success) {
       const response: ApiResponse<null> = {
         data: null,
         error: 'Invalid program ID format',

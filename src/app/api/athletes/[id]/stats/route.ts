@@ -1,7 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach, isParent } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
+import { uuidLikeSchema } from '@/lib/validation'
 import type { ApiResponse, AthleteDashboardStats } from '@/lib/types'
 
 interface RouteParams {
@@ -23,7 +23,7 @@ export async function GET(
     const { id } = await params
 
     // Validate UUID format
-    const uuidSchema = z.string().uuid()
+    const uuidSchema = uuidLikeSchema()
     const idValidation = uuidSchema.safeParse(id)
 
     if (!idValidation.success) {

@@ -4,12 +4,27 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { StatsCard, StreakIndicator, QuickAction, AchievementBadge } from '@/components/athlete'
 import { ProfileSettingsDialog } from '@/components/profile/profile-settings-dialog'
+import { getAssignmentStatusMeta } from '@/lib/status'
+
+type CoachUpdateType = 'assignment' | 'note' | 'score'
+
+interface CoachUpdateItem {
+  id: string
+  type: CoachUpdateType
+  title: string
+  description: string
+  date: string
+  href: string
+  statusLabel?: string
+  statusClassName?: string
+}
 
 interface DashboardData {
   profile: any
   stats: any
   todayPlan: { title: string; type: string; duration: number; notes: string } | null
   groupName: string
+  coachUpdates: CoachUpdateItem[]
   user: any
 }
 
@@ -45,6 +60,51 @@ function calculateLevelProgress(totalXp: number): { level: number; progress: num
   return { level, progress, xpToNext }
 }
 
+function safeDateValue(value: string | null | undefined): number {
+  if (!value) return 0
+  const time = Date.parse(value)
+  return Number.isNaN(time) ? 0 : time
+}
+
+function buildCoachUpdates(assignments: any[], notes: any[], scores: any[]): CoachUpdateItem[] {
+  const assignmentUpdates: CoachUpdateItem[] = assignments.map((item: any) => {
+    const statusMeta = getAssignmentStatusMeta(item.status)
+    return {
+      id: `assignment-${item.id}`,
+      type: 'assignment',
+      title: `Program atamasi: ${item.program?.title || 'Program'}`,
+      description: `Durum: ${statusMeta.label}`,
+      date: item.updated_at || item.created_at || item.start_date || '',
+      href: '/dashboard/programs',
+      statusLabel: statusMeta.label,
+      statusClassName: statusMeta.className,
+    }
+  })
+
+  const noteUpdates: CoachUpdateItem[] = notes.map((item: any) => ({
+    id: `note-${item.id}`,
+    type: 'note',
+    title: 'Antrenor notu eklendi',
+    description: (item.note || item.note_text || 'Yeni gelisim notu').slice(0, 100),
+    date: item.created_at || '',
+    href: '/dashboard/progress',
+  }))
+
+  const scoreUpdates: CoachUpdateItem[] = scores.map((item: any) => ({
+    id: `score-${item.id}`,
+    type: 'score',
+    title: 'Beceri puani guncellendi',
+    description: `${item.skill_name || 'Beceri'}: ${item.score || '-'} / 10`,
+    date: item.measured_at || item.created_at || '',
+    href: '/dashboard/progress',
+  }))
+
+  return [...assignmentUpdates, ...noteUpdates, ...scoreUpdates]
+    .filter(item => safeDateValue(item.date) > 0)
+    .sort((a, b) => safeDateValue(b.date) - safeDateValue(a.date))
+    .slice(0, 6)
+}
+
 export function AthleteDashboardContent() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -70,13 +130,19 @@ export function AthleteDashboardContent() {
           return
         }
 
-        // Fetch stats and group info in parallel
-        const [statsRes, groupsRes] = await Promise.all([
+        // Fetch core data and recent coach updates in parallel.
+        const [statsRes, groupsRes, assignmentsRes, notesRes, scoresRes] = await Promise.all([
           fetch(`/api/athletes/${athleteProfile.id}/stats`),
           fetch('/api/my-groups'),
+          fetch(`/api/assignments?athlete_id=${athleteProfile.id}&pageSize=5`),
+          fetch(`/api/development-notes?athlete_id=${athleteProfile.id}&pageSize=5`),
+          fetch(`/api/skill-scores?athlete_id=${athleteProfile.id}&pageSize=5`),
         ])
         const stats = await statsRes.json()
         const groupsData = await groupsRes.json()
+        const assignmentsData = await assignmentsRes.json()
+        const notesData = await notesRes.json()
+        const scoresData = await scoresRes.json()
         if (!stats.success) {
           setError(stats.error || 'Istatistikler yuklenemedi')
           return
@@ -99,7 +165,13 @@ export function AthleteDashboardContent() {
           }
         }
 
-        setData({ profile: athleteProfile, stats: stats.data, todayPlan, groupName, user: me.data.user })
+        const coachUpdates = buildCoachUpdates(
+          assignmentsData.success ? (assignmentsData.data || []) : [],
+          notesData.success ? (notesData.data || []) : [],
+          scoresData.success ? (scoresData.data || []) : []
+        )
+
+        setData({ profile: athleteProfile, stats: stats.data, todayPlan, groupName, coachUpdates, user: me.data.user })
       } catch {
         setError('Veriler yuklenemedi')
       } finally {
@@ -309,6 +381,53 @@ export function AthleteDashboardContent() {
         </div>
         {(!stats?.weeklyProgress || stats.weeklyProgress.every((d: any) => d.completed === 0)) && (
           <p className="text-center text-sm text-gray-400 mt-4">Bu hafta henüz tamamlanan antrenman yok</p>
+        )}
+      </div>
+
+      {/* Coach updates to keep coach-athlete connection visible */}
+      <div className="bg-white p-6 rounded-xl border border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-gray-900">Koc Guncellemeleri</h3>
+          <Link href="/dashboard/progress" className="text-sm text-emerald-600 hover:underline">
+            Detay →
+          </Link>
+        </div>
+
+        {data.coachUpdates.length > 0 ? (
+          <div className="space-y-3">
+            {data.coachUpdates.map(update => (
+              <Link
+                key={update.id}
+                href={update.href}
+                className="block rounded-lg border border-gray-100 p-3 hover:border-emerald-300 hover:bg-emerald-50/30 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900">
+                      {update.type === 'assignment' ? '📋' : update.type === 'note' ? '📝' : '⭐'} {update.title}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1 truncate">{update.description}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    {update.statusLabel && update.statusClassName && (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${update.statusClassName}`}>
+                        {update.statusLabel}
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-400 whitespace-nowrap">
+                      {new Date(update.date).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' })}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <div className="text-4xl mb-2">🤝</div>
+            <p className="text-gray-500 text-sm">Henuz koc guncellemesi yok.</p>
+            <p className="text-gray-400 text-sm mt-1">Kocun atama, not veya puan girdiginde burada gorunecek.</p>
+          </div>
         )}
       </div>
 
