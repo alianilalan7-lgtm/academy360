@@ -4,6 +4,8 @@ Academy360, futbol akademileri icin gelistirilmis rol tabanli bir yonetim ve gel
 Sporcu, antrenor, veli, kulup yoneticisi ve super admin kullanici tipleri icin tek bir uygulama icinde
 planlama, takip, olcum ve operasyon akislarini bir araya getirir.
 
+English version: `/Users/alianilalan/Desktop/academy360/README.en.md`
+
 ## One Cikan Ozellikler
 
 - Rol bazli dashboard mimarisi (`athlete`, `coach`, `parent`, `club_admin`, `super_admin`)
