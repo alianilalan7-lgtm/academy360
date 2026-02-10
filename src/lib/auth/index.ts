@@ -1,5 +1,42 @@
 import { createClient } from '@/lib/supabase/server'
 import type { UserRole, Membership, UserProfile } from '@/lib/types'
+import { cookies } from 'next/headers'
+
+const ROLE_COOKIE_NAME = 'academy360_active_role'
+const ORG_COOKIE_NAME = 'academy360_active_org_id'
+const USER_ROLES: UserRole[] = ['athlete', 'coach', 'club_admin', 'parent', 'super_admin']
+
+function parseRoleCookie(value: string | undefined): UserRole | null {
+  if (!value) return null
+  return USER_ROLES.includes(value as UserRole) ? (value as UserRole) : null
+}
+
+function resolveCurrentMembership(
+  memberships: Membership[],
+  preferredRole: UserRole | null,
+  preferredOrgId: string | null
+): Membership | null {
+  if (memberships.length === 0) return null
+
+  if (preferredRole && preferredOrgId) {
+    const exact = memberships.find(
+      m => m.role === preferredRole && m.organization_id === preferredOrgId
+    )
+    if (exact) return exact
+  }
+
+  if (preferredRole) {
+    const sameRole = memberships.find(m => m.role === preferredRole)
+    if (sameRole) return sameRole
+  }
+
+  if (preferredOrgId) {
+    const sameOrg = memberships.find(m => m.organization_id === preferredOrgId)
+    if (sameOrg) return sameOrg
+  }
+
+  return memberships[0]
+}
 
 export interface AuthUser {
   id: string
@@ -12,6 +49,7 @@ export interface AuthUser {
 
 export async function getAuthUser(): Promise<AuthUser | null> {
   const supabase = await createClient()
+  const cookieStore = await cookies()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -31,10 +69,14 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     .select('*')
     .eq('user_id', user.id)
     .eq('status', 'active')
+    .order('joined_at', { ascending: false })
 
-  // Get current organization from cookie or first membership
-  const currentOrgId = memberships?.[0]?.organization_id ?? null
-  const currentRole = memberships?.[0]?.role ?? null
+  const preferredRole = parseRoleCookie(cookieStore.get(ROLE_COOKIE_NAME)?.value)
+  const preferredOrgId = cookieStore.get(ORG_COOKIE_NAME)?.value ?? null
+  const activeMembership = resolveCurrentMembership(memberships ?? [], preferredRole, preferredOrgId)
+
+  const currentOrgId = activeMembership?.organization_id ?? null
+  const currentRole = activeMembership?.role ?? null
 
   return {
     id: user.id,

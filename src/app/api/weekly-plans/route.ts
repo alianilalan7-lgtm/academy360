@@ -5,15 +5,33 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth, isAdmin, isCoach } from '@/lib/auth'
 import type { ApiResponse, WeeklyPlan } from '@/lib/types'
 
+const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Tarih formati YYYY-MM-DD olmali')
+const sessionTypeSchema = z.enum(['technical', 'tactical', 'physical', 'game_based', 'match', 'rest'])
+const dayPlanSchema = z.object({
+  title: z.string().max(150).optional(),
+  type: z.union([sessionTypeSchema, z.literal('')]).optional(),
+  duration: z.number().int().min(0).max(300).optional(),
+  notes: z.string().max(2000).optional(),
+}).strict()
+const weekPlanDataSchema = z.object({
+  pazartesi: dayPlanSchema.optional(),
+  sali: dayPlanSchema.optional(),
+  carsamba: dayPlanSchema.optional(),
+  persembe: dayPlanSchema.optional(),
+  cuma: dayPlanSchema.optional(),
+  cumartesi: dayPlanSchema.optional(),
+  pazar: dayPlanSchema.optional(),
+}).strict()
+
 const planQuerySchema = z.object({
   group_id: uuidLikeSchema().optional(),
-  week_start: z.string().optional(),
+  week_start: isoDateSchema.optional(),
 })
 
 const planCreateSchema = z.object({
   group_id: uuidLikeSchema().optional().nullable(),
-  week_start: z.string().min(1),
-  plan_data: z.record(z.string(), z.any()),
+  week_start: isoDateSchema,
+  plan_data: weekPlanDataSchema.default({}),
   notes: z.string().optional().nullable(),
   is_published: z.boolean().optional().default(false),
 })
@@ -22,6 +40,11 @@ export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth()
     const supabase = await createServiceClient()
+    const orgId = user.currentOrganizationId
+
+    if (!orgId) {
+      return NextResponse.json({ data: null, error: 'Organizasyon bulunamadi', success: false }, { status: 400 })
+    }
 
     const { searchParams } = new URL(request.url)
     const queryParams = Object.fromEntries(searchParams.entries())
@@ -37,13 +60,10 @@ export async function GET(request: NextRequest) {
 
     const { group_id, week_start } = validationResult.data
 
-    let query = (supabase as any)
+    let query = supabase
       .from('weekly_plans')
       .select('*')
-
-    if (user.currentOrganizationId) {
-      query = query.eq('organization_id', user.currentOrganizationId)
-    }
+      .eq('organization_id', orgId)
 
     if (group_id) query = query.eq('group_id', group_id)
     if (week_start) query = query.eq('week_start', week_start)
@@ -62,7 +82,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ data: null, error: 'Planlar yüklenemedi', success: false }, { status: 500 })
     }
 
-    const response: ApiResponse<WeeklyPlan[]> = { data: plans as any, error: null, success: true }
+    const response: ApiResponse<WeeklyPlan[]> = { data: (plans ?? []) as WeeklyPlan[], error: null, success: true }
     return NextResponse.json(response)
   } catch (error) {
     console.error('Weekly plans GET error:', error)
@@ -79,6 +99,10 @@ export async function POST(request: NextRequest) {
     if (!isAdmin(user) && !isCoach(user)) {
       return NextResponse.json({ data: null, error: 'Yetkiniz yok', success: false }, { status: 403 })
     }
+    const orgId = user.currentOrganizationId
+    if (!orgId) {
+      return NextResponse.json({ data: null, error: 'Organizasyon bulunamadi', success: false }, { status: 400 })
+    }
 
     const supabase = await createServiceClient()
     const body = await request.json()
@@ -92,11 +116,29 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const { data: plan, error } = await (supabase as any)
+    const { group_id } = validationResult.data
+    if (group_id) {
+      const { data: group, error: groupError } = await supabase
+        .from('groups')
+        .select('id')
+        .eq('id', group_id)
+        .eq('organization_id', orgId)
+        .maybeSingle()
+
+      if (groupError) {
+        console.error('Error validating group for weekly plan:', groupError)
+        return NextResponse.json({ data: null, error: 'Grup dogrulanamadi', success: false }, { status: 500 })
+      }
+      if (!group) {
+        return NextResponse.json({ data: null, error: 'Secilen grup organizasyona ait degil', success: false }, { status: 400 })
+      }
+    }
+
+    const { data: plan, error } = await supabase
       .from('weekly_plans')
       .insert({
         ...validationResult.data,
-        organization_id: user.currentOrganizationId!,
+        organization_id: orgId,
         coach_id: user.id,
       })
       .select()
@@ -122,7 +164,7 @@ export async function POST(request: NextRequest) {
 
 const planUpdateSchema = z.object({
   id: uuidLikeSchema(),
-  plan_data: z.record(z.string(), z.any()).optional(),
+  plan_data: weekPlanDataSchema.optional(),
   notes: z.string().optional().nullable(),
   is_published: z.boolean().optional(),
 })
@@ -132,6 +174,10 @@ export async function PUT(request: NextRequest) {
     const user = await requireAuth()
     if (!isAdmin(user) && !isCoach(user)) {
       return NextResponse.json({ data: null, error: 'Yetkiniz yok', success: false }, { status: 403 })
+    }
+    const orgId = user.currentOrganizationId
+    if (!orgId) {
+      return NextResponse.json({ data: null, error: 'Organizasyon bulunamadi', success: false }, { status: 400 })
     }
 
     const supabase = await createServiceClient()
@@ -148,17 +194,26 @@ export async function PUT(request: NextRequest) {
 
     const { id, ...updateData } = validationResult.data
 
-    const { data: plan, error } = await (supabase as any)
+    let updateQuery = supabase
       .from('weekly_plans')
       .update(updateData)
       .eq('id', id)
-      .eq('organization_id', user.currentOrganizationId!)
+      .eq('organization_id', orgId)
+
+    if (!isAdmin(user)) {
+      updateQuery = updateQuery.eq('coach_id', user.id)
+    }
+
+    const { data: plan, error } = await updateQuery
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Error updating weekly plan:', error)
       return NextResponse.json({ data: null, error: 'Plan guncellenemedi', success: false }, { status: 500 })
+    }
+    if (!plan) {
+      return NextResponse.json({ data: null, error: 'Plan bulunamadi veya guncelleme yetkiniz yok', success: false }, { status: 404 })
     }
 
     return NextResponse.json({ data: plan, error: null, success: true })

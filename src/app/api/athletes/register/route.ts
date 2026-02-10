@@ -20,6 +20,16 @@ function generatePassword(): string {
   return pass
 }
 
+async function rollbackAuthUser(
+  serviceClient: ReturnType<typeof createServiceClient>,
+  userId: string
+) {
+  const { error } = await serviceClient.auth.admin.deleteUser(userId)
+  if (error) {
+    console.error('Rollback failed while deleting auth user:', error)
+  }
+}
+
 /**
  * POST /api/athletes/register
  * Create a new user account + athlete profile + membership in one step
@@ -83,7 +93,7 @@ export async function POST(request: NextRequest) {
     const newUserId = authData.user.id
 
     // 2. Create user profile
-    await serviceClient.from('user_profiles').upsert({
+    const { error: profileError } = await serviceClient.from('user_profiles').upsert({
       id: newUserId,
       email: placeholderEmail,
       full_name: fullName,
@@ -92,8 +102,17 @@ export async function POST(request: NextRequest) {
       onboarding_completed: false,
     })
 
+    if (profileError) {
+      console.error('Error creating user profile:', profileError)
+      await rollbackAuthUser(serviceClient, newUserId)
+      return NextResponse.json(
+        { success: false, error: 'Kullanici profili olusturulamadi' },
+        { status: 500 }
+      )
+    }
+
     // 3. Create membership
-    await serviceClient.from('memberships').insert({
+    const { error: membershipError } = await serviceClient.from('memberships').insert({
       user_id: newUserId,
       organization_id: orgId,
       role: 'athlete',
@@ -102,6 +121,15 @@ export async function POST(request: NextRequest) {
       invited_at: new Date().toISOString(),
       joined_at: new Date().toISOString(),
     })
+
+    if (membershipError) {
+      console.error('Error creating membership:', membershipError)
+      await rollbackAuthUser(serviceClient, newUserId)
+      return NextResponse.json(
+        { success: false, error: 'Uyelik kaydi olusturulamadi' },
+        { status: 500 }
+      )
+    }
 
     // 4. Create athlete profile
     const { data: athleteProfile, error: athleteError } = await serviceClient
@@ -131,6 +159,7 @@ export async function POST(request: NextRequest) {
 
     if (athleteError) {
       console.error('Error creating athlete profile:', athleteError)
+      await rollbackAuthUser(serviceClient, newUserId)
       return NextResponse.json(
         { success: false, error: 'Sporcu profili olusturulamadi' },
         { status: 500 }
