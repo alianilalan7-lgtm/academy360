@@ -1,36 +1,117 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Academy360
 
-## Getting Started
+Academy360, futbol akademileri icin gelistirilmis rol tabanli bir yonetim ve gelisim takip platformudur.
+Sporcu, antrenor, veli, kulup yoneticisi ve super admin kullanici tipleri icin tek bir uygulama icinde
+planlama, takip, olcum ve operasyon akislarini bir araya getirir.
 
-First, run the development server:
+## One Cikan Ozellikler
+
+- Rol bazli dashboard mimarisi (`athlete`, `coach`, `parent`, `club_admin`, `super_admin`)
+- Antrenor tarafinda haftalik plan, seans, program atama ve oyuncu yonetimi
+- Sporcu tarafinda gunluk plan, programlar, egzersiz ve gelisim gorunumu
+- Veli tarafinda cocuk ilerleme ve rapor takibi
+- Kulup yonetimi tarafinda uyeler, gruplar, odeme ve bildirim ekranlari
+- Supabase tabanli auth + veri yonetimi
+
+## Paneller Arasi Akis
+
+Antrenor aksiyonlarinin sporcu/veli gorunumune nasil yansidigini gormek icin:
+
+- `/Users/alianilalan/Desktop/academy360/docs/paneller-arasi-baglanti.md`
+
+## Teknoloji Yigini
+
+- Next.js 16 (App Router)
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Supabase (`@supabase/ssr`, `@supabase/supabase-js`)
+- Zod (request validation)
+
+## Proje Yapisi
+
+```text
+academy360/
+|- src/
+|  |- app/                 # App Router sayfalari ve API route'lari
+|  |- components/          # UI ve dashboard bilesenleri
+|  |- contexts/            # Role/context yonetimi
+|  `- lib/                 # Supabase, tipler, servisler, yardimcilar
+|- supabase/
+|  |- migrations/          # SQL migration dosyalari
+|  |- seed.sql             # Seed verisi
+|  `- config.toml          # Supabase CLI config
+|- scripts/                # Seed ve yardimci komut script'leri
+`- docs/                   # Proje dokumantasyonu
+```
+
+## Gereksinimler
+
+- Node.js 20+
+- npm 10+
+- (Opsiyonel) Supabase CLI
+
+## Kurulum
+
+1. Depoyu klonla ve dizine gir:
+
+```bash
+git clone <repo-url>
+cd academy360
+```
+
+2. Bagimliliklari yukle:
+
+```bash
+npm install
+```
+
+3. Ortam degiskenlerini ayarla (`.env.local`):
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+4. Gelistirme sunucusunu baslat:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Uygulama varsayilan olarak `http://localhost:3000` adresinde acilir.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Kullanilan Scriptler
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run dev`: gelistirme sunucusu
+- `npm run build`: production build
+- `npm run start`: production sunucusu
+- `npm run lint`: ESLint kontrolu
+- `npm run seed:auth`: test auth kullanicilarini olusturur
+- `npm run seed:data`: seed SQL calistirir
+- `npm run seed`: auth + data seed islemlerini birlikte calistirir
 
-## Learn More
+## Ornek Test Hesaplari
 
-To learn more about Next.js, take a look at the following resources:
+Varsayilan seed akisinda kullanilan ornek hesaplar:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Super Admin: `superadmin@academy360.com`
+- Kulup Admin: `admin@yildizakademi.com`
+- Antrenor: `mehmet.demir@yildizakademi.com`
+- Sporcu: `enes.yildirim@email.com`
+- Veli: `hakan.yildirim@email.com`
+- Sifre: `Test1234!`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Gelistirme Notlari
 
-## Deploy on Vercel
+- Rol bazli menu ve erisim kontrolu dashboard seviyesinde yonetilir.
+- API katmaninda validasyon icin Zod semalari kullanilir.
+- Supabase migration/seed akisi ile veri modeli senkron tutulur.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Katki
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Yeni branch ac (`codex/<kisa-aciklama>`)
+2. Degisiklikleri yap
+3. `npm run lint` ve mumkunse `npm run build` calistir
+4. PR ac
